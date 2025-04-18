@@ -1,0 +1,14 @@
+{
+  "historial": [
+    {
+      "mesa": "Mesa 3",
+      "clientes": "Laura",
+      "pedidos": [
+        { "item": "Ensalada César", "cantidad": 2 },
+        { "item": "Salmón a la plancha", "cantidad": 1 }
+      ],
+      "hora": "2025-04-18T14:30:00",
+      "total": 45000
+    }
+  ]
+}
