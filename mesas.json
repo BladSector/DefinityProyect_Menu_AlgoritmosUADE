@@ -1,0 +1,46 @@
+{
+  "mesas": [
+    {
+      "id": 1,
+      "qr_url": "/mesa/1",
+      "ocupada": false,
+      "clientes": [],
+      "pedido_activo": null
+    },
+    {
+      "id": 2,
+      "qr_url": "/mesa/2",
+      "ocupada": true,
+      "clientes": [],
+      "pedido_activo": null
+    },
+    {
+      "id": 3,
+      "qr_url": "/mesa/3",
+      "ocupada": false,
+      "clientes": [],
+      "pedido_activo": null
+    },
+    {
+      "id": 4,
+      "qr_url": "/mesa/4",
+      "ocupada": false,
+      "clientes": [],
+      "pedido_activo": null
+    },
+    {
+      "id": 5,
+      "qr_url": "/mesa/5",
+      "ocupada": false,
+      "clientes": [],
+      "pedido_activo": null
+    },
+    {
+      "id": 6,
+      "qr_url": "/mesa/6",
+      "ocupada": false,
+      "clientes": [],
+      "pedido_activo": null
+    }
+  ]
+}

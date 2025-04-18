@@ -1,0 +1,408 @@
+{
+    "platos": [
+      /* ENTRADAS (8) */
+      {
+        "etapa": "entrada",
+        "categoría": "ensalada",
+        "id": 1,
+        "descripcion": "Ensalada vegana con aderezo de anacardos",
+        "nombre": "Ensalada César Vegana",
+        "dietas": ["vegano", "sin lactosa", "sin gluten"],
+        "ingredientes": ["lechuga romana", "croutons de quinoa", "anacardos", "levadura nutricional"],
+        "precio": 8800,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "crudo",
+        "id": 2,
+        "descripcion": "Remolacha marinada con vinagreta",
+        "nombre": "Carpaccio de remolacha",
+        "dietas": ["vegano", "vegetariano", "sin gluten"],
+        "ingredientes": ["remolacha", "rúcula", "vinagreta de cítricos", "almendras"],
+        "precio": 9200,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "dip",
+        "id": 3,
+        "descripcion": "Hummus clásico con verduras frescas",
+        "nombre": "Hummus con crudités",
+        "dietas": ["vegano", "sin gluten", "nut-free"],
+        "ingredientes": ["garbanzos", "tahini", "limón", "zanahoria", "apio"],
+        "precio": 7900,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "sopa",
+        "id": 4,
+        "descripcion": "Sopa tradicional de lentejas",
+        "nombre": "Sopa de lentejas",
+        "dietas": ["vegano", "sin gluten", "nut-free"],
+        "ingredientes": ["lentejas", "zanahoria", "apio", "comino"],
+        "precio": 7500,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "empanada",
+        "id": 5,
+        "descripcion": "Empanadillas horneadas sin gluten",
+        "nombre": "Empanadillas de champiñones",
+        "dietas": ["vegetariano", "sin gluten"],
+        "ingredientes": ["masa sin gluten", "champiñones", "cebolla", "pimentón"],
+        "precio": 8500,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "frito",
+        "id": 6,
+        "descripcion": "Croquetas veganas de quinoa",
+        "nombre": "Croquetas de quinoa",
+        "dietas": ["vegano", "sin gluten"],
+        "ingredientes": ["quinoa", "champiñones", "cebolla", "harina de garbanzo"],
+        "precio": 8200,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "pan",
+        "id": 7,
+        "descripcion": "Pan sin gluten con tomate fresco",
+        "nombre": "Bruschetta sin gluten",
+        "dietas": ["vegetariano", "sin gluten"],
+        "ingredientes": ["pan sin gluten", "tomate", "albahaca", "aceite de oliva"],
+        "precio": 7300,
+        "disponible": true
+      },
+      {
+        "etapa": "entrada",
+        "categoría": "rollito",
+        "id": 8,
+        "descripcion": "Rollitos frescos con salsa tamari",
+        "nombre": "Rollitos de primavera veganos",
+        "dietas": ["vegano", "sin lactosa"],
+        "ingredientes": ["hojas de arroz", "zanahoria", "aguacate", "menta"],
+        "precio": 8900,
+        "disponible": true
+      },
+  
+      /* PLATOS PRINCIPALES - CARNES (6) */
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 9,
+        "descripcion": "Corte premium con salsa de vino",
+        "nombre": "Solomillo de res",
+        "dietas": ["sin gluten"],
+        "ingredientes": ["solomillo", "vino tinto", "romero", "puré de patatas"],
+        "precio": 22000,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 10,
+        "descripcion": "Costillas cocinadas a fuego lento",
+        "nombre": "Costillas BBQ",
+        "dietas": [],
+        "ingredientes": ["costillas de cerdo", "salsa barbacoa", "papas horneadas"],
+        "precio": 18500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 11,
+        "descripcion": "Pollo con especias y leche de coco",
+        "nombre": "Pollo al curry",
+        "dietas": ["sin lactosa"],
+        "ingredientes": ["pollo", "leche de coco", "curry", "arroz basmati"],
+        "precio": 16500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 12,
+        "descripcion": "Cordero con hierbas provenzales",
+        "nombre": "Carré de cordero",
+        "dietas": ["sin gluten"],
+        "ingredientes": ["cordero", "romero", "tomillo", "verduras asadas"],
+        "precio": 23500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 13,
+        "descripcion": "Brochetas mixtas a la parrilla",
+        "nombre": "Brocheta mixta",
+        "dietas": ["sin gluten"],
+        "ingredientes": ["pollo", "ternera", "pimientos", "cebolla"],
+        "precio": 17800,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "carne",
+        "id": 14,
+        "descripcion": "Ternera cocinada lentamente",
+        "nombre": "Ternera estofada",
+        "dietas": ["sin gluten"],
+        "ingredientes": ["ternera", "zanahoria", "vino tinto", "puré de papas"],
+        "precio": 19500,
+        "disponible": true
+      },
+  
+      /* PLATOS PRINCIPALES - PESCADOS (4) */
+      {
+        "etapa": "principal",
+        "categoría": "pescado",
+        "id": 15,
+        "descripcion": "Salmón con costra de hierbas",
+        "nombre": "Salmón en costra de hierbas",
+        "dietas": ["sin gluten", "sin lactosa"],
+        "ingredientes": ["salmón", "perejil", "pan rallado sin gluten", "espárragos"],
+        "precio": 19800,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "pescado",
+        "id": 16,
+        "descripcion": "Bacalao con salsa emulsionada",
+        "nombre": "Bacalao al pil-pil",
+        "dietas": ["sin gluten", "sin lactosa"],
+        "ingredientes": ["bacalao", "ajo", "aceite de oliva", "guindilla"],
+        "precio": 21500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "pescado",
+        "id": 17,
+        "descripcion": "Atún sellado con quinoa",
+        "nombre": "Atún rojo sellado",
+        "dietas": ["sin gluten", "sin lactosa"],
+        "ingredientes": ["atún", "quinoa", "aguacate", "sésamo"],
+        "precio": 22500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "pescado",
+        "id": 18,
+        "descripcion": "Pulpo tradicional gallego",
+        "nombre": "Pulpo a la gallega",
+        "dietas": ["sin gluten", "sin lactosa"],
+        "ingredientes": ["pulpo", "papas", "pimentón", "aceite de oliva"],
+        "precio": 20500,
+        "disponible": true
+      },
+      /* PASTAS (6) */
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 31,
+            "descripcion": "Pasta con salsa de carne tradicional",
+            "nombre": "Spaghetti Bolognese",
+            "dietas": [],
+            "ingredientes": ["spaghetti", "carne molida", "salsa de tomate", "cebolla", "zanahoria"],
+            "precio": 15800,
+            "disponible": true
+          },
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 32,
+            "descripcion": "Pasta con salsa cremosa de albahaca",
+            "nombre": "Penne al pesto",
+            "dietas": ["vegetariano"],
+            "ingredientes": ["penne", "albahaca", "piñones", "queso parmesano", "aceite de oliva"],
+            "precio": 14500,
+            "disponible": true
+          },
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 33,
+            "descripcion": "Raviolis rellenos con salsa de nuez",
+            "nombre": "Raviolis de ricotta y nuez",
+            "dietas": ["vegetariano"],
+            "ingredientes": ["raviolis", "ricotta", "nuez", "mantequilla", "salvia"],
+            "precio": 16200,
+            "disponible": true
+          },
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 34,
+            "descripcion": "Versión sin gluten con salsa pomodoro",
+            "nombre": "Fettuccine sin gluten",
+            "dietas": ["vegetariano", "sin gluten"],
+            "ingredientes": ["fettuccine sin gluten", "salsa de tomate", "albahaca", "ajo"],
+            "precio": 14800,
+            "disponible": true
+          },
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 35,
+            "descripcion": "Pasta con verduras de temporada",
+            "nombre": "Fusilli primavera",
+            "dietas": ["vegetariano"],
+            "ingredientes": ["fusilli", "calabacín", "berenjena", "pimiento", "salsa de tomate"],
+            "precio": 13900,
+            "disponible": true
+          },
+          {
+            "etapa": "principal",
+            "categoría": "pasta",
+            "id": 36,
+            "descripcion": "Ñoquis caseros con salsa gourmet",
+            "nombre": "Ñoquis de papa con trufa",
+            "dietas": ["vegetariano"],
+            "ingredientes": ["ñoquis", "salsa de crema", "aceite de trufa", "champiñones"],
+            "precio": 16500,
+            "disponible": true
+          }
+  
+      /* PLATOS PRINCIPALES - ESPECIAL: VEGETARIANOS/VEGANOS (4) */
+      {
+        "etapa": "principal",
+        "categoría": "especial",
+        "id": 19,
+        "descripcion": "Curry cremoso con tofu",
+        "nombre": "Curry de tofu",
+        "dietas": ["vegano", "sin gluten", "nut-free"],
+        "ingredientes": ["tofu", "leche de coco", "curry", "arroz basmati"],
+        "precio": 15500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "especial",
+        "id": 20,
+        "descripcion": "Lasagna sin carne con berenjena",
+        "nombre": "Lasagna de berenjena",
+        "dietas": ["vegetariano", "sin gluten"],
+        "ingredientes": ["berenjena", "ricotta", "salsa de tomate", "espinacas"],
+        "precio": 16500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "vegano",
+        "id": 21,
+        "descripcion": "Hamburguesa de legumbres",
+        "nombre": "Hamburguesa de lentejas",
+        "dietas": ["vegano", "sin gluten"],
+        "ingredientes": ["lentejas", "arroz", "cebolla", "pan sin gluten"],
+        "precio": 14500,
+        "disponible": true
+      },
+      {
+        "etapa": "principal",
+        "categoría": "vegano",
+        "id": 22,
+        "descripcion": "Bowl con quinoa y vegetales",
+        "nombre": "Bowl vegano de quinoa",
+        "dietas": ["vegano", "sin gluten", "nut-free"],
+        "ingredientes": ["quinoa", "aguacate", "zanahoria", "remolacha", "semillas"],
+        "precio": 14800,
+        "disponible": true
+      },
+  
+      /* POSTRES (4) */
+      {
+        "etapa": "postre",
+        "categoría": "tarta",
+        "id": 23,
+        "descripcion": "Tarta de queso sin lácteos",
+        "nombre": "Tarta de queso vegana",
+        "dietas": ["vegano", "sin lactosa"],
+        "ingredientes": ["anacardos", "tofu", "arándanos", "agave"],
+        "precio": 9500,
+        "disponible": true
+      },
+      {
+        "etapa": "postre",
+        "categoría": "chocolate",
+        "id": 24,
+        "descripcion": "Brownie sin gluten",
+        "nombre": "Brownie sin gluten",
+        "dietas": ["sin gluten"],
+        "ingredientes": ["chocolate", "harina de almendra", "huevos", "nueces"],
+        "precio": 8500,
+        "disponible": true
+      },
+      {
+        "etapa": "postre",
+        "categoría": "crema",
+        "id": 25,
+        "descripcion": "Mousse cremoso de aguacate",
+        "nombre": "Mousse de aguacate",
+        "dietas": ["vegano", "sin gluten", "nut-free"],
+        "ingredientes": ["aguacate", "cacao", "sirope de arce"],
+        "precio": 7800,
+        "disponible": true
+      },
+      {
+        "etapa": "postre",
+        "categoría": "helado",
+        "id": 26,
+        "descripcion": "Helado artesanal de coco",
+        "nombre": "Helado de coco",
+        "dietas": ["vegano", "sin lactosa"],
+        "ingredientes": ["leche de coco", "azúcar de coco", "vainilla"],
+        "precio": 7500,
+        "disponible": true
+      },
+  
+      /* BEBIDAS (4) */
+      {
+        "etapa": "bebida",
+        "categoría": "refresco",
+        "id": 27,
+        "descripcion": "Limonada con hierbabuena",
+        "nombre": "Limonada natural",
+        "ingredientes": ["limón", "hierbabuena", "agua", "stevia"],
+        "precio": 5500,
+        "disponible": true
+      },
+      {
+        "etapa": "bebida",
+        "categoría": "café",
+        "id": 28,
+        "descripcion": "Café con leche vegetal",
+        "nombre": "Café con leche de avena",
+        "ingredientes": ["café espresso", "leche de avena"],
+        "precio": 4800,
+        "disponible": true
+      },
+      {
+        "etapa": "bebida",
+        "categoría": "té",
+        "id": 29,
+        "descripcion": "Té especiado con leche vegetal",
+        "nombre": "Chai latte vegano",
+        "ingredientes": ["té negro", "canela", "cardamomo", "leche de almendra"],
+        "precio": 5200,
+        "disponible": true
+      },
+      {
+        "etapa": "bebida",
+        "categoría": "chocolate",
+        "id": 30,
+        "descripcion": "Chocolate caliente sin lácteos",
+        "nombre": "Chocolate caliente vegano",
+        "ingredientes": ["cacao", "leche de coco", "canela"],
+        "precio": 6000,
+        "disponible": true
+      }
+    ]
+  }
