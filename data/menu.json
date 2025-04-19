@@ -1,9 +1,9 @@
 {
     "platos": [
-      /* ENTRADAS (8) */
+
       {
         "etapa": "entrada",
-        "categoría": "ensalada",
+        "categoria": "ensalada",
         "id": 1,
         "descripcion": "Ensalada vegana con aderezo de anacardos",
         "nombre": "Ensalada César Vegana",
@@ -14,7 +14,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "crudo",
+        "categoria": "crudo",
         "id": 2,
         "descripcion": "Remolacha marinada con vinagreta",
         "nombre": "Carpaccio de remolacha",
@@ -25,7 +25,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "dip",
+        "categoria": "dip",
         "id": 3,
         "descripcion": "Hummus clásico con verduras frescas",
         "nombre": "Hummus con crudités",
@@ -36,7 +36,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "sopa",
+        "categoria": "sopa",
         "id": 4,
         "descripcion": "Sopa tradicional de lentejas",
         "nombre": "Sopa de lentejas",
@@ -47,7 +47,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "empanada",
+        "categoria": "empanada",
         "id": 5,
         "descripcion": "Empanadillas horneadas sin gluten",
         "nombre": "Empanadillas de champiñones",
@@ -58,7 +58,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "frito",
+        "categoria": "frito",
         "id": 6,
         "descripcion": "Croquetas veganas de quinoa",
         "nombre": "Croquetas de quinoa",
@@ -69,7 +69,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "pan",
+        "categoria": "pan",
         "id": 7,
         "descripcion": "Pan sin gluten con tomate fresco",
         "nombre": "Bruschetta sin gluten",
@@ -80,7 +80,7 @@
       },
       {
         "etapa": "entrada",
-        "categoría": "rollito",
+        "categoria": "rollito",
         "id": 8,
         "descripcion": "Rollitos frescos con salsa tamari",
         "nombre": "Rollitos de primavera veganos",
@@ -90,10 +90,10 @@
         "disponible": true
       },
   
-      /* PLATOS PRINCIPALES - CARNES (6) */
+
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 9,
         "descripcion": "Corte premium con salsa de vino",
         "nombre": "Solomillo de res",
@@ -104,7 +104,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 10,
         "descripcion": "Costillas cocinadas a fuego lento",
         "nombre": "Costillas BBQ",
@@ -115,7 +115,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 11,
         "descripcion": "Pollo con especias y leche de coco",
         "nombre": "Pollo al curry",
@@ -126,7 +126,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 12,
         "descripcion": "Cordero con hierbas provenzales",
         "nombre": "Carré de cordero",
@@ -137,7 +137,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 13,
         "descripcion": "Brochetas mixtas a la parrilla",
         "nombre": "Brocheta mixta",
@@ -148,7 +148,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "carne",
+        "categoria": "carne",
         "id": 14,
         "descripcion": "Ternera cocinada lentamente",
         "nombre": "Ternera estofada",
@@ -158,10 +158,10 @@
         "disponible": true
       },
   
-      /* PLATOS PRINCIPALES - PESCADOS (4) */
+
       {
         "etapa": "principal",
-        "categoría": "pescado",
+        "categoria": "pescado",
         "id": 15,
         "descripcion": "Salmón con costra de hierbas",
         "nombre": "Salmón en costra de hierbas",
@@ -172,7 +172,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "pescado",
+        "categoria": "pescado",
         "id": 16,
         "descripcion": "Bacalao con salsa emulsionada",
         "nombre": "Bacalao al pil-pil",
@@ -183,7 +183,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "pescado",
+        "categoria": "pescado",
         "id": 17,
         "descripcion": "Atún sellado con quinoa",
         "nombre": "Atún rojo sellado",
@@ -194,7 +194,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "pescado",
+        "categoria": "pescado",
         "id": 18,
         "descripcion": "Pulpo tradicional gallego",
         "nombre": "Pulpo a la gallega",
@@ -203,10 +203,10 @@
         "precio": 20500,
         "disponible": true
       },
-      /* PASTAS (6) */
-          {
+
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 31,
             "descripcion": "Pasta con salsa de carne tradicional",
             "nombre": "Spaghetti Bolognese",
@@ -214,10 +214,10 @@
             "ingredientes": ["spaghetti", "carne molida", "salsa de tomate", "cebolla", "zanahoria"],
             "precio": 15800,
             "disponible": true
-          },
-          {
+      },
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 32,
             "descripcion": "Pasta con salsa cremosa de albahaca",
             "nombre": "Penne al pesto",
@@ -225,10 +225,10 @@
             "ingredientes": ["penne", "albahaca", "piñones", "queso parmesano", "aceite de oliva"],
             "precio": 14500,
             "disponible": true
-          },
-          {
+      },
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 33,
             "descripcion": "Raviolis rellenos con salsa de nuez",
             "nombre": "Raviolis de ricotta y nuez",
@@ -236,10 +236,10 @@
             "ingredientes": ["raviolis", "ricotta", "nuez", "mantequilla", "salvia"],
             "precio": 16200,
             "disponible": true
-          },
-          {
+      },
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 34,
             "descripcion": "Versión sin gluten con salsa pomodoro",
             "nombre": "Fettuccine sin gluten",
@@ -247,10 +247,10 @@
             "ingredientes": ["fettuccine sin gluten", "salsa de tomate", "albahaca", "ajo"],
             "precio": 14800,
             "disponible": true
-          },
-          {
+      },
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 35,
             "descripcion": "Pasta con verduras de temporada",
             "nombre": "Fusilli primavera",
@@ -258,10 +258,10 @@
             "ingredientes": ["fusilli", "calabacín", "berenjena", "pimiento", "salsa de tomate"],
             "precio": 13900,
             "disponible": true
-          },
-          {
+      },
+      {
             "etapa": "principal",
-            "categoría": "pasta",
+            "categoria": "pasta",
             "id": 36,
             "descripcion": "Ñoquis caseros con salsa gourmet",
             "nombre": "Ñoquis de papa con trufa",
@@ -269,12 +269,12 @@
             "ingredientes": ["ñoquis", "salsa de crema", "aceite de trufa", "champiñones"],
             "precio": 16500,
             "disponible": true
-          }
+      },
   
-      /* PLATOS PRINCIPALES - ESPECIAL: VEGETARIANOS/VEGANOS (4) */
+      
       {
         "etapa": "principal",
-        "categoría": "especial",
+        "categoria": "especial",
         "id": 19,
         "descripcion": "Curry cremoso con tofu",
         "nombre": "Curry de tofu",
@@ -285,7 +285,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "especial",
+        "categoria": "especial",
         "id": 20,
         "descripcion": "Lasagna sin carne con berenjena",
         "nombre": "Lasagna de berenjena",
@@ -296,7 +296,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "vegano",
+        "categoria": "vegano",
         "id": 21,
         "descripcion": "Hamburguesa de legumbres",
         "nombre": "Hamburguesa de lentejas",
@@ -307,7 +307,7 @@
       },
       {
         "etapa": "principal",
-        "categoría": "vegano",
+        "categoria": "vegano",
         "id": 22,
         "descripcion": "Bowl con quinoa y vegetales",
         "nombre": "Bowl vegano de quinoa",
@@ -317,10 +317,10 @@
         "disponible": true
       },
   
-      /* POSTRES (4) */
+
       {
         "etapa": "postre",
-        "categoría": "tarta",
+        "categoria": "tarta",
         "id": 23,
         "descripcion": "Tarta de queso sin lácteos",
         "nombre": "Tarta de queso vegana",
@@ -331,7 +331,7 @@
       },
       {
         "etapa": "postre",
-        "categoría": "chocolate",
+        "categoria": "chocolate",
         "id": 24,
         "descripcion": "Brownie sin gluten",
         "nombre": "Brownie sin gluten",
@@ -342,7 +342,7 @@
       },
       {
         "etapa": "postre",
-        "categoría": "crema",
+        "categoria": "crema",
         "id": 25,
         "descripcion": "Mousse cremoso de aguacate",
         "nombre": "Mousse de aguacate",
@@ -353,7 +353,7 @@
       },
       {
         "etapa": "postre",
-        "categoría": "helado",
+        "categoria": "helado",
         "id": 26,
         "descripcion": "Helado artesanal de coco",
         "nombre": "Helado de coco",
@@ -362,11 +362,11 @@
         "precio": 7500,
         "disponible": true
       },
-  
-      /* BEBIDAS (4) */
+
+
       {
         "etapa": "bebida",
-        "categoría": "refresco",
+        "categoria": "refresco",
         "id": 27,
         "descripcion": "Limonada con hierbabuena",
         "nombre": "Limonada natural",
@@ -376,7 +376,7 @@
       },
       {
         "etapa": "bebida",
-        "categoría": "café",
+        "categoria": "café",
         "id": 28,
         "descripcion": "Café con leche vegetal",
         "nombre": "Café con leche de avena",
@@ -386,7 +386,7 @@
       },
       {
         "etapa": "bebida",
-        "categoría": "té",
+        "categoria": "té",
         "id": 29,
         "descripcion": "Té especiado con leche vegetal",
         "nombre": "Chai latte vegano",
@@ -396,7 +396,7 @@
       },
       {
         "etapa": "bebida",
-        "categoría": "chocolate",
+        "categoria": "chocolate",
         "id": 30,
         "descripcion": "Chocolate caliente sin lácteos",
         "nombre": "Chocolate caliente vegano",
