@@ -10,24 +10,27 @@ def main():
     sistema_pedidos_clientes = SistemaPedidosClientes(sistema)
     sistema_pedidos_cocina = SistemaPedidosCocina(sistema)
     sistema_pedidos_mozos = SistemaPedidosMozos(sistema)
-
-    print("=== SISTEMA RESTAURANTE ===")
-    print("Seleccione su rol:")
-    print("1. Cliente")
-    print("2. Empleado")
-    print("0. Salir")
-    
-    rol = input("Opción: ")
-    
-    if rol == "1":
-        interfaz_cliente(sistema, sistema_pedidos_clientes)
-    elif rol == "2":
-        interfaz_empleado(sistema_pedidos_cocina, sistema_pedidos_mozos)
-    elif rol == "0":
-        return
-    else:
-        print("Opción inválida")
-
+    while True:
+        try:
+            print("\n=== SISTEMA RESTAURANTE ===")
+            print("Seleccione su rol:")
+            print("1. Cliente")
+            print("2. Empleado")
+            print("0. Salir")
+            
+            rol = input("Opción: ")
+            
+            if rol == "1":
+                interfaz_cliente(sistema, sistema_pedidos_clientes)
+            elif rol == "2":
+                interfaz_empleado(sistema_pedidos_cocina, sistema_pedidos_mozos)
+            elif rol == "0":
+                break
+            else:
+                print("Opción inválida \n")
+        except ValueError:
+            print()
+        
 def interfaz_cliente(sistema, sistema_pedidos_clientes):
     print("\n=== ACCESO CLIENTE ===")
     qr_url = input("Ingrese URL del QR escaneado: ")
@@ -54,12 +57,12 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
         print("4. Agregar nota a pedido")
         print("5. Llamar al camarero")
         print("6. Pagar cuenta")
-        print("0. Salir")
+        print("0. Volver")
         
         opcion = input("Seleccione una opción: ")
         
         if opcion == "0":
-            break
+            return
         elif opcion == "1":
             sistema.hacer_pedido(mesa_id, cliente_key)
         elif opcion == "2":
@@ -83,61 +86,74 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
             break
 
 def interfaz_empleado(sistema_pedidos_cocina, sistema_pedidos_mozos):
-    print("\n=== ACCESO EMPLEADO ===")
-    print("Seleccione departamento:")
-    print("1. Cocina")
-    print("2. Mozos/Camareros")
-    print("0. Volver")
-    
-    depto = input("Opción: ")
-    
-    if depto == "1":
-        interfaz_cocina(sistema_pedidos_cocina)
-    elif depto == "2":
-        interfaz_mozos(sistema_pedidos_mozos)
-    elif depto == "0":
-        return
-    else:
-        print("Opción inválida")
+    while True:
+        try:
+            print("\n=== ACCESO EMPLEADO ===")
+            print("Seleccione departamento:")
+            print("1. Cocina")
+            print("2. Mozos/Camareros")
+            print("0. Volver")
+            
+            depto = input("Opción: ")
+            
+            if depto == "1":
+                interfaz_cocina(sistema_pedidos_cocina)
+            elif depto == "2":
+                interfaz_mozos(sistema_pedidos_mozos)
+            elif depto == "0":
+                return
+            else:
+                print("Opción inválida \n")
+        except ValueError:
+            print("")
 
 def interfaz_cocina(sistema_pedidos_cocina):
     print("\n=== INTERFAZ COCINA ===")
     while True:
-        print("\n--- OPCIONES ---")
-        print("1. Gestionar pedidos activos")
-        print("2. Ver pedidos urgentes")
-        print("0. Salir")
-        
-        opcion = input("Seleccione una opción: ")
-        
-        if opcion == "0":
-            break
-        elif opcion == "1":
-            sistema_pedidos_cocina.mostrar_pedidos_activos()
-        elif opcion == "2":
-            sistema_pedidos_cocina.mostrar_pedidos_urgentes()
-        else:
-            print("Opción no válida")
+        try:
+            print("\n--- OPCIONES ---")
+            print("1. Gestionar pedidos activos")
+            print("2. Ver pedidos urgentes")
+            print("0. Volver")
+            
+            opcion = input("Seleccione una opción: ")
+            
+            if opcion == "0":
+                return
+            elif opcion == "1":
+                sistema_pedidos_cocina.mostrar_pedidos_activos()
+            elif opcion == "2":
+                sistema_pedidos_cocina.mostrar_pedidos_urgentes()
+            else:
+                print("Opción no válida")
+        except ValueError:
+            print("")
 
 def interfaz_mozos(sistema_pedidos_mozos):
     print("\n=== INTERFAZ MOZOS ===")
     while True:
-        print("\n--- OPCIONES ---")
-        print("1. Marcar pedido como entregado")
-        print("2. Comentarios de Mesas")
-        print("3. Mapa del Restaurante")
-        print("0. Salir")
-        
-        opcion = input("Seleccione una opción: ")
-        
-        if opcion == "0":
-            break
-        elif opcion == "1":
-            sistema_pedidos_mozos.marcar_entregado() 
-        elif opcion == "2":
-            sistema_pedidos_mozos.mostrar_comentarios_mesas()
-        elif opcion == "3":
-            sistema_pedidos_mozos.mostrar_mapa_mesas()
+        try:
+            print("\n--- OPCIONES ---")
+            print("1. Marcar pedido como entregado")
+            print("2. Comentarios de Mesas")
+            print("3. Mapa del Restaurante")
+            print("0. Volver")
+            
+            opcion = input("Seleccione una opción: ")
+            
+            if opcion == "0":
+                return
+            elif opcion == "1":
+                sistema_pedidos_mozos.marcar_entregado() 
+            elif opcion == "2":
+                sistema_pedidos_mozos.mostrar_comentarios_mesas()
+            elif opcion == "3":
+                sistema_pedidos_mozos.mostrar_mapa_mesas()
+            else:
+                print("Opción no válida")
+        except ValueError:
+            print("")
+            
 
 if __name__ == "__main__":
     main()
