@@ -2,6 +2,28 @@ import json
 from datetime import datetime
 
 class SistemaPedidosCocina:
+    def mostrar_mapa_mesas(self):
+        """Muestra un mapa completo de todas las mesas con su estado"""
+        print("\n--- MAPA DEL RESTAURANTE ---")
+        
+        for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
+            mesa = mesa_data[0]
+            estado = "🟢 Libre" if mesa['estado'] == 'libre' else "🟠 Ocupada"
+            
+            print(f"\n{mesa['nombre']} [{estado}]")
+            
+            if mesa['estado'] == 'ocupada':
+                # Mostrar clientes y pedidos
+                for i in range(1, mesa['capacidad'] + 1):
+                    cliente_key = f"cliente_{i}"
+                    if mesa[cliente_key]['nombre']:
+                        print(f"\n👤 {mesa[cliente_key]['nombre']}:")
+                        for pedido in mesa[cliente_key]['pedidos']:
+                            nota = f" (Nota: {pedido['nota']})" if 'nota' in pedido else ""
+                            entregado = " (✅ Entregado)" if pedido.get('entregado') else ""
+                            print(f"  - {pedido['cantidad']}x {pedido['nombre']}{nota}{entregado}")
+        input("\nPresione Enter para continuar...")
+        
     def __init__(self, sistema_mesas):
         self.sistema_mesas = sistema_mesas
         self.estados_pedido = {
@@ -136,15 +158,8 @@ class SistemaPedidosCocina:
                 
                 # Mostrar detalles de la mesa seleccionada
                 while True:
-                    print(f"\nMesa {mesa_id} - {mesa_info['nombre']}")
+                    print(f"\n---{mesa_info['nombre']}---")
                     print("-" * 40)
-                    
-                    # Mostrar comentarios si existen
-                    if mesa_info['comentarios']:
-                        print("\n📢 Comentarios:")
-                        for comentario in mesa_info['comentarios']:
-                            estado = "✅ Atendido" if comentario['resuelto'] else "⚠️ Pendiente"
-                            print(f"- {comentario['cliente']}: {comentario['mensaje']} ({estado})")
                     
                     # Mostrar pedidos numerados
                     print("\n🍽️ Pedidos:")

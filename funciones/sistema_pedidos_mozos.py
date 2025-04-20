@@ -73,7 +73,7 @@ class SistemaPedidosMozos:
             
             if comentarios:
                 mesas_con_comentarios = True
-                print(f"\n{mesa['nombre']}")
+                print(f"\n--{mesa['nombre']}--")
                 print(f"Estado: {mesa['estado'].upper()}")
                 
                 # Mostrar comentarios
