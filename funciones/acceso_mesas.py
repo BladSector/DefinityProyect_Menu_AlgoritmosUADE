@@ -99,25 +99,36 @@ class SistemaMesas:
                     return platos
     
     def mostrar_menu_completo(self):
-        """Muestra todo el menú organizado por categorías"""
-        categorias = sorted({plato.get('categoría', 'Sin categoría') for plato in self.menu['platos']})
+        """Muestra todo el menú organizado por etapas y categorías"""
+        etapas = ["entrada", "principal", "postre", "bebida"]
         
-        for categoria in categorias:
-            print(f"\n=== {categoria.upper()} ===")
-            platos_categoria = [p for p in self.menu['platos'] if p.get('categoría') == categoria]
+        for etapa in etapas:
+            print(f"\n=== {etapa.upper()} ===")
+            if etapa not in self.menu['platos']:
+                continue
+                
+            categorias = self.menu['platos'][etapa].keys()
             
-            for i, plato in enumerate(platos_categoria, 1):
-                print(f"\n{i}. {plato['nombre']} - ${plato['precio']}")
-                print(f"   Descripción: {plato['descripcion']}")
-                print(f"   Ingredientes: {', '.join(plato['ingredientes'])}")
-                if 'dietas' in plato and plato['dietas']:
-                    print(f"   Dietas: {', '.join(plato['dietas'])}")
+            for categoria in categorias:
+                print(f"\n  --- {categoria.upper()} ---")
+                platos_categoria = self.menu['platos'][etapa][categoria]
+                
+                for i, plato in enumerate(platos_categoria, 1):
+                    print(f"\n  {i}. {plato['nombre']} - ${plato['precio']}")
+                    print(f"     Descripción: {plato['descripcion']}")
+                    print(f"     Ingredientes: {', '.join(plato['ingredientes'])}")
+                    if 'dietas' in plato and plato['dietas']:
+                        print(f"     Dietas: {', '.join(plato['dietas'])}")
         
         input("\nPresione Enter para continuar...")
     
     def filtrar_por_categoria(self):
         """Filtra platos por categoría"""
-        categorias = sorted({plato.get('categoría', 'Sin categoría') for plato in self.menu['platos']})
+        # Primero recopilamos todas las categorías únicas de todas las etapas
+        categorias = set()
+        for etapa in self.menu['platos'].values():
+            categorias.update(etapa.keys())
+        categorias = sorted(categorias)
         
         print("\n--- CATEGORÍAS DISPONIBLES ---")
         for i, cat in enumerate(categorias, 1):
@@ -130,7 +141,12 @@ class SistemaMesas:
                 return None
             categoria = categorias[opcion-1]
             
-            platos = [p for p in self.menu['platos'] if p.get('categoría') == categoria]
+            # Buscamos la categoría en todas las etapas
+            platos = []
+            for etapa in self.menu['platos'].values():
+                if categoria in etapa:
+                    platos.extend(etapa[categoria])
+            
             self.mostrar_platos(platos)
             return platos
         except (ValueError, IndexError):
@@ -152,8 +168,14 @@ class SistemaMesas:
                 return None
             dieta_seleccionada = dietas[opcion-1].lower()
             
-            platos = [p for p in self.menu['platos'] 
-                     if dieta_seleccionada in [d.lower() for d in p.get('dietas', [])]]
+            # Buscamos en todas las etapas y categorías
+            platos = []
+            for etapa in self.menu['platos'].values():
+                for categoria in etapa.values():
+                    for plato in categoria:
+                        if dieta_seleccionada in [d.lower() for d in plato.get('dietas', [])]:
+                            platos.append(plato)
+            
             self.mostrar_platos(platos)
             return platos
         except (ValueError, IndexError):
@@ -162,7 +184,7 @@ class SistemaMesas:
     
     def filtrar_por_etapa(self):
         """Filtra platos por etapa"""
-        etapas = ["entrada", "principal", "postre", "bebida"]
+        etapas = list(self.menu['platos'].keys())
         
         print("\n--- ETAPAS DEL MENÚ ---")
         for i, etapa in enumerate(etapas, 1):
@@ -175,7 +197,11 @@ class SistemaMesas:
                 return None
             etapa = etapas[opcion-1]
             
-            platos = [p for p in self.menu['platos'] if p['etapa'] == etapa]
+            # Recopilamos todos los platos de la etapa seleccionada
+            platos = []
+            for categoria in self.menu['platos'][etapa].values():
+                platos.extend(categoria)
+            
             self.mostrar_platos(platos)
             return platos
         except (ValueError, IndexError):
@@ -183,17 +209,21 @@ class SistemaMesas:
             return None
     
     def mostrar_platos(self, platos):
-        """Muestra la lista de platos con formato detallado"""
+        """Muestra una lista de platos"""
         if not platos:
-            print("No se encontraron platos en esta categoría")
+            print("\nNo se encontraron platos con esos criterios.")
+            input("Presione Enter para continuar...")
             return
-            
+        
+        print("\n--- RESULTADOS ---")
         for i, plato in enumerate(platos, 1):
             print(f"\n{i}. {plato['nombre']} - ${plato['precio']}")
             print(f"   Descripción: {plato['descripcion']}")
             print(f"   Ingredientes: {', '.join(plato['ingredientes'])}")
             if 'dietas' in plato and plato['dietas']:
                 print(f"   Dietas: {', '.join(plato['dietas'])}")
+        
+        input("\nPresione Enter para continuar...")
     
     def hacer_pedido(self, mesa_id, cliente_key):
         """Gestiona el proceso de pedido"""
@@ -230,22 +260,50 @@ class SistemaMesas:
                 print("Por favor ingrese un número válido")
     
     def llamar_camarero(self, mesa_id, cliente_key):
-        """Registra solicitud de camarero"""
-        mensaje = input("Ingrese su solicitud (ej: 'Necesito más pan'): ")
-        
-        comentario = {
-            "mensaje": mensaje,
-            "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "resuelto": False,
-            "cliente": self.mesas[mesa_id][0][cliente_key]['nombre']
-        }
-        
-        self.mesas[mesa_id][0]['comentarios_camarero'].append(comentario)
-        self.guardar_mesas()
-        print("\n✅ Solicitud enviada al camarero")
+        """Registra solicitud de camarero con validación y opción para volver"""
+        while True:
+            print("\n--- LLAMAR AL CAMARERO ---")
+            print("Ingrese su solicitud (ej: 'Necesito más pan')")
+            print("o escriba '0' para volver al menú anterior")
+            
+            mensaje = input("> ").strip()
+            
+            if mensaje == "0":
+                print("\nVolviendo al menú anterior...")
+                return False  # Indica que no se envió el mensaje
+            
+            if not mensaje:
+                print("\n⚠️ Error: No puede enviar una solicitud vacía.")
+                continue
+            
+            # Si llegamos aquí, el mensaje es válido
+            comentario = {
+                "mensaje": mensaje,
+                "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "resuelto": False,
+                "cliente": self.mesas[mesa_id][0][cliente_key]['nombre']
+            }
+            
+            self.mesas[mesa_id][0]['comentarios_camarero'].append(comentario)
+            self.guardar_mesas()
+            print("\n✅ Solicitud enviada al camarero")
+            return True  # Indica que el mensaje fue enviado
     
     def pagar_cuenta(self, mesa_id):
         """Procesa el pago y guarda historial"""
+        # Verificar si hay platos registrados
+        hay_pedidos = False
+        for i in range(1, self.mesas[mesa_id][0]['capacidad'] + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = self.mesas[mesa_id][0][cliente_key]
+            if cliente['pedidos']:
+                hay_pedidos = True
+                break
+        
+        if not hay_pedidos:
+            print("\n⚠️ No hay ningún plato registrado para cobrar")
+            return False  # Indica que no se completó el pago
+        
         # Crear registro de historial
         registro = {
             "mesa": self.mesas[mesa_id][0]['nombre'],
@@ -288,4 +346,4 @@ class SistemaMesas:
         self.guardar_mesas()
         print(f"\n✅ Cuenta pagada - Total: ${registro['total']}")
         print(f"Historial guardado en {archivo_historial}")
-
+        return True  # Indica que el pago se completó

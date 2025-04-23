@@ -6,13 +6,207 @@
       "qr_url": "https://turestaurante.com/menu/mesa-1",
       "estado": "ocupada",
       "cliente_1": {
-        "nombre": "San1",
+        "nombre": "1",
         "pedidos": [
           {
             "id": 1,
             "nombre": "Ensalada César Vegana",
             "cantidad": 1,
             "precio": 8800,
-            "hora": "2025-04-20 11:54:38",
-            "nota": "cocina 1.1",
-            "estado_cocina": 
+            "hora": "2025-04-23 14:41:40",
+            "en_cocina": true,
+            "hora_envio": "14:42:45",
+            "notas": [
+              {
+                "texto": "nueva nota",
+                "hora": "2025-04-23 15:03:06"
+              }
+            ]
+          },
+          {
+            "id": 1,
+            "nombre": "Ensalada César Vegana",
+            "cantidad": 1,
+            "precio": 8800,
+            "hora": "2025-04-23 15:09:51",
+            "en_cocina": true,
+            "hora_envio": "15:10:08"
+          }
+        ]
+      },
+      "cliente_2": {
+        "nombre": "sa",
+        "pedidos": []
+      },
+      "cliente_3": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_4": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": [
+        {
+          "mensaje": "mozo 1",
+          "hora": "2025-04-23 14:48:30",
+          "resuelto": false,
+          "cliente": "sa"
+        },
+        {
+          "mensaje": "saas",
+          "hora": "2025-04-23 14:51:15",
+          "resuelto": false,
+          "cliente": "sa"
+        },
+        {
+          "mensaje": "asdasdasd",
+          "hora": "2025-04-23 14:51:38",
+          "resuelto": false,
+          "cliente": "sa"
+        }
+      ]
+    }
+  ],
+  "mesa2": [
+    {
+      "nombre": "Mesa 2",
+      "capacidad": 6,
+      "qr_url": "https://turestaurante.com/menu/mesa-2",
+      "estado": "libre",
+      "cliente_1": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_2": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_3": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_4": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_5": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_6": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": []
+    }
+  ],
+  "mesa3": [
+    {
+      "nombre": "Mesa 3",
+      "capacidad": 4,
+      "qr_url": "https://turestaurante.com/menu/mesa-3",
+      "estado": "libre",
+      "cliente_1": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_2": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_3": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_4": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": []
+    }
+  ],
+  "mesa4": [
+    {
+      "nombre": "Mesa 4",
+      "capacidad": 2,
+      "qr_url": "https://turestaurante.com/menu/mesa-4",
+      "estado": "libre",
+      "cliente_1": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_2": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": []
+    }
+  ],
+  "mesa5": [
+    {
+      "nombre": "Mesa 5",
+      "capacidad": 8,
+      "qr_url": "https://turestaurante.com/menu/mesa-5",
+      "estado": "libre",
+      "cliente_1": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_2": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_3": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_4": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_5": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_6": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_7": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_8": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": []
+    }
+  ],
+  "mesa6": [
+    {
+      "nombre": "Mesa 6",
+      "capacidad": 4,
+      "qr_url": "https://turestaurante.com/menu/mesa-6",
+      "estado": "libre",
+      "cliente_1": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_2": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_3": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "cliente_4": {
+        "nombre": "",
+        "pedidos": []
+      },
+      "comentarios_camarero": []
+    }
+  ]
+}

@@ -42,7 +42,14 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
         
     print(f"\nBienvenido a {mesa['nombre']} (Capacidad: {mesa['capacidad']})")
     
-    nombre_cliente = input("Ingrese su nombre: ")
+    # Bucle para validar que el nombre no esté vacío
+    while True:
+        nombre_cliente = input("Ingrese su nombre: ").strip()
+        if not nombre_cliente:
+            print("\n⚠️ Error: No puede dejar el nombre vacío. Por favor ingrese su nombre.")
+        else:
+            break
+    
     cliente_key = sistema.registrar_cliente(mesa_id, nombre_cliente)
     
     if not cliente_key:
@@ -83,8 +90,8 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
             elif opcion == "5":
                 sistema.llamar_camarero(mesa_id, cliente_key)
             elif opcion == "6":
-                sistema.pagar_cuenta(mesa_id)
-                return
+                if sistema.pagar_cuenta(mesa_id):
+                    return 
             else:
                 print("Opción no válida")
         except ValueError:
