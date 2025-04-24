@@ -44,46 +44,61 @@ class SistemaPedidosCocina:
             'postres': []
         }
         
-        # Mapeo de posibles variaciones de etapas
-        mapeo_etapas = {
-            'entrada': 'entradas',
-            'principal': 'principales',
-            'postre': 'postres'
-        }
-        
-        # Agrupar pedidos por etapa (excluyendo bebidas)
-        for cliente_key in [f"cliente_{i}" for i in range(1, mesa['capacidad'] + 1)]:
+        # Agrupar pedidos por etapa
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f"cliente_{i}"
             if mesa[cliente_key]['nombre']:
                 for pedido in mesa[cliente_key]['pedidos']:
-                    try:
-                        plato = next(p for p in self.sistema_mesas.menu['platos'] if p['id'] == pedido['id'])
-                        etapa = plato['etapa'].lower()
-                        
-                        # Saltar bebidas
-                        if etapa in ['bebida', 'bebidas']:
-                            continue
-                            
-                        # Normalizar nombres de etapas
-                        etapa = mapeo_etapas.get(etapa, etapa)
-                        
-                        if etapa not in pedidos_agrupados:
-                            continue
-                            
-                        pedido_copy = pedido.copy()
-                        pedido_copy.update({
-                            'cliente': mesa[cliente_key]['nombre'],
-                            'etapa': etapa,
-                            'estado_cocina': pedido.get('estado_cocina', self.determinar_estado_pedido(pedido))
-                        })
-                        pedidos_agrupados[etapa].append(pedido_copy)
-                    except StopIteration:
+                    # Solo procesar pedidos enviados a cocina pero no entregados
+                    if not pedido.get('en_cocina', False) or pedido.get('entregado', False):
                         continue
+                    
+                    # Buscar el plato en el menú (versión corregida)
+                    plato = None
+                    for etapa in self.sistema_mesas.menu['platos'].values():
+                        for categoria in etapa.values():
+                            for item in categoria:
+                                if item['id'] == pedido['id']:
+                                    plato = item
+                                    break
+                            if plato: break
+                        if plato: break
+                    
+                    if not plato:
+                        continue
+                    
+                    # Determinar etapa del plato (versión mejorada)
+                    etapa_plato = plato.get('etapa', '').lower()
+                    if any(b in etapa_plato for b in ['bebida', 'bebidas', 'drink']):
+                        continue
+                    
+                    # Clasificación mejorada de etapas
+                    if any(e in etapa_plato for e in ['entrada', 'starter', 'appetizer']):
+                        grupo = 'entradas'
+                    elif any(m in etapa_plato for m in ['principal', 'main', 'plato principal']):
+                        grupo = 'principales'
+                    elif any(p in etapa_plato for p in ['postre', 'dessert', 'dulce']):
+                        grupo = 'postres'
+                    else:
+                        continue  # Si no coincide con ninguna etapa conocida
+                    
+                    # Crear copia del pedido con información adicional
+                    pedido_procesado = {
+                        'id': pedido['id'],
+                        'nombre': pedido['nombre'],
+                        'cantidad': pedido['cantidad'],
+                        'cliente': mesa[cliente_key]['nombre'],
+                        'mesa_id': mesa_id,
+                        'mesa_nombre': mesa['nombre'],
+                        'hora_envio': pedido.get('hora_envio', 'reciente'),
+                        'notas': pedido.get('notas', []),
+                        'estado_cocina': pedido.get('estado_cocina', self.estados_pedido['normal'])
+                    }
+                    pedidos_agrupados[grupo].append(pedido_procesado)
         
-        # Ordenar por prioridad
-        orden_etapas = ['entradas', 'principales', 'postres']
+        # Ordenar por prioridad (urgentes primero)
         pedidos_ordenados = []
-        
-        for etapa in orden_etapas:
+        for etapa in ['entradas', 'principales', 'postres']:
             if pedidos_agrupados[etapa]:
                 pedidos_etapa = sorted(
                     pedidos_agrupados[etapa],
@@ -95,12 +110,116 @@ class SistemaPedidosCocina:
                 pedidos_ordenados.extend(pedidos_etapa)
         
         return pedidos_ordenados
-    
+
+    def mostrar_pedidos_activos(self):
+        """Muestra todos los pedidos activos en cocina"""
+        print("\n=== PEDIDOS ACTIVOS EN COCINA ===")
+        
+        todos_pedidos = []
+        for mesa_id in self.sistema_mesas.mesas:
+            pedidos_mesa = self.procesar_pedidos_mesa(mesa_id)
+            if pedidos_mesa:
+                print(f"\nMesa {mesa_id}: {self.sistema_mesas.mesas[mesa_id][0]['nombre']}")
+                for i, pedido in enumerate(pedidos_mesa, 1):
+                    estado = pedido.get('estado_cocina', '🟡 PENDIENTE')
+                    print(f"{i}. {estado} - {pedido['cliente']}")
+                    print(f"   {pedido['cantidad']}x {pedido['nombre']}")
+                    print(f"   Enviado a cocina: {pedido['hora_envio']}")
+                    
+                    # Mostrar notas si existen
+                    if pedido.get('notas'):
+                        print("   📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      - {nota['texto']} ({nota['hora']})")
+                    
+                    todos_pedidos.append(pedido)
+        
+        if not todos_pedidos:
+            print("\nNo hay pedidos activos en cocina")
+            input("\nPresione Enter para continuar...")
+            return
+        
+        # Opción para gestionar pedidos
+        try:
+            print("\nSeleccione:")
+            print("1. Gestionar un pedido")
+            print("0. Volver")
+            
+            opcion = int(input("\nOpción: "))
+            if opcion == 1:
+                mesa_id = input("Ingrese ID de mesa: ")
+                num_pedido = int(input("Número de pedido: ")) - 1
+                
+                # Buscar el pedido seleccionado
+                pedido_seleccionado = None
+                for pedido in todos_pedidos:
+                    if pedido['mesa_id'] == mesa_id and todos_pedidos.index(pedido) == num_pedido:
+                        pedido_seleccionado = pedido
+                        break
+                
+                if pedido_seleccionado:
+                    self.gestionar_pedido(mesa_id, pedido_seleccionado)
+        except (ValueError, IndexError):
+            print("Opción inválida")
+
+    def gestionar_pedido(self, mesa_id, pedido):
+        """Menú de gestión para un pedido específico"""
+        while True:
+            print(f"\n--- GESTIÓN DE PEDIDO ---")
+            print(f"Mesa: {pedido['mesa_nombre']}")
+            print(f"Cliente: {pedido['cliente']}")
+            print(f"Pedido: {pedido['cantidad']}x {pedido['nombre']}")
+            print(f"Estado actual: {pedido.get('estado_cocina', 'Pendiente')}")
+            
+            print("\nOpciones:")
+            print("1. Marcar como en preparación")
+            print("2. Marcar como listo para entregar")
+            print("3. Agregar nota")
+            print("0. Volver")
+            
+            try:
+                opcion = int(input("\nSelección: "))
+                
+                if opcion == 0:
+                    break
+                elif opcion == 1:
+                    self.marcar_en_preparacion(mesa_id, pedido)
+                elif opcion == 2:
+                    self.marcar_listo_entrega(mesa_id, pedido)
+                elif opcion == 3:
+                    nota = input("Ingrese nota: ")
+                    if nota:
+                        if 'notas' not in pedido:
+                            pedido['notas'] = []
+                        pedido['notas'].append({
+                            'texto': nota,
+                            'hora': datetime.now().strftime("%H:%M hs")
+                        })
+                        self.sistema_mesas.guardar_mesas()
+                        print("✅ Nota agregada")
+            except ValueError:
+                print("Opción inválida")
+
     def determinar_estado_pedido(self, pedido):
         """Determina el estado de prioridad del pedido"""
+        # Buscar el plato en la estructura del menú
+        plato = None
+        for etapa in self.sistema_mesas.menu['platos'].values():
+            for categoria in etapa.values():
+                for item in categoria:
+                    if item['id'] == pedido['id']:
+                        plato = item
+                        break
+                if plato:
+                    break
+            if plato:
+                break
+        
+        if not plato:
+            print(f"Advertencia: No se encontró el plato con ID {pedido['id']}")
+            return self.estados_pedido['normal']
+        
         try:
-            plato = next(p for p in self.sistema_mesas.menu['platos'] if p['id'] == pedido['id'])
-            
             if pedido.get('estado_cocina'):
                 return pedido['estado_cocina']
             if 'urgente' in pedido.get('nota', '').lower():
@@ -110,9 +229,6 @@ class SistemaPedidosCocina:
             if any(d in ['vegano', 'sin gluten'] for d in plato.get('dietas', [])):
                 return self.estados_pedido['preparar']
             
-            return self.estados_pedido['normal']
-        except StopIteration:
-            print(f"Advertencia: No se encontró el plato con ID {pedido['id']}")
             return self.estados_pedido['normal']
         except KeyError as e:
             print(f"Advertencia: Falta campo requerido: {e}")

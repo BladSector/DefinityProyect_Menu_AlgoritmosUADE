@@ -9,76 +9,67 @@ class SistemaPedidosClientes:
         self.sistema_mesas = sistema_mesas
     
     def mostrar_resumen_grupal(self, mesa_id):
-        """Muestra el resumen grupal de pedidos con notas múltiples y comentarios al camarero"""
+        """Muestra el resumen grupal con estados actualizados"""
         mesa = self.sistema_mesas.mesas[mesa_id][0]
         
         print("\n=== RESUMEN GRUPAL ===")
         
-        # Mostrar pedidos pendientes de enviar
+        # Pedidos pendientes de enviar
         print("\n--- PEDIDOS POR ENVIAR A COCINA ---")
         hay_pendientes = False
         for i in range(1, mesa['capacidad'] + 1):
             cliente_key = f"cliente_{i}"
-            if mesa[cliente_key]['nombre'] and mesa[cliente_key]['pedidos']:
+            if mesa[cliente_key]['nombre']:
                 for pedido in mesa[cliente_key]['pedidos']:
                     if not pedido.get('en_cocina', False):
                         hay_pendientes = True
                         print(f"\n👤 {mesa[cliente_key]['nombre']}:")
                         print(f"  - {pedido['cantidad']}x {pedido['nombre']} 🟡 Pendiente")
-                        
-                        # Mostrar notas (sistema nuevo y antiguo)
-                        if 'notas' in pedido and pedido['notas']:
-                            print("    📝 Notas:")
-                            for nota in pedido['notas']:
-                                print(f"      • {nota['texto']} ({nota['hora']})")
-                        elif 'nota' in pedido and pedido['nota']:
-                            print(f"    📝 Nota: {pedido['nota']} (sistema anterior)")
-        
+
         if not hay_pendientes:
             print("  (No hay pedidos pendientes de enviar)")
         
-        # Mostrar pedidos en cocina
+        # Pedidos en cocina
         print("\n--- PEDIDOS EN COCINA ---")
         hay_en_cocina = False
         for i in range(1, mesa['capacidad'] + 1):
             cliente_key = f"cliente_{i}"
-            if mesa[cliente_key]['nombre'] and mesa[cliente_key]['pedidos']:
+            if mesa[cliente_key]['nombre']:
                 for pedido in mesa[cliente_key]['pedidos']:
-                    if pedido.get('en_cocina', False):
+                    if pedido.get('en_cocina', False) and not pedido.get('entregado', False):
                         hay_en_cocina = True
+                        estado = "🟢 En cocina"
+                        if pedido.get('estado_cocina'):
+                            estado = pedido['estado_cocina']
                         print(f"\n👤 {mesa[cliente_key]['nombre']}:")
-                        hora_envio = pedido.get('hora_envio', 'reciente')
-                        print(f"  - {pedido['cantidad']}x {pedido['nombre']} 🟢 En cocina ({hora_envio})")
-                        
-                        # Mostrar notas (sistema nuevo y antiguo)
-                        if 'notas' in pedido and pedido['notas']:
-                            print("    📝 Notas:")
-                            for nota in pedido['notas']:
-                                print(f"      - {nota['texto']} ({nota['hora']})")
-                        elif 'nota' in pedido and pedido['nota']:
-                            print(f"    📝 Nota: {pedido['nota']} (sistema anterior)")
-        
+                        print(f"  - {pedido['cantidad']}x {pedido['nombre']} {estado}")
+
         if not hay_en_cocina:
-            print("  (No hay pedidos en cocina aún)")
+            print("  (No hay pedidos en cocina)")
         
-        # Mostrar comentarios al camarero
-        print("\n--- SOLICITUDES AL CAMARERO ---")
-        if mesa.get('comentarios_camarero'):
-            for comentario in mesa['comentarios_camarero']:
-                estado = "✅ Resuelto" if comentario['resuelto'] else "🟡 Pendiente"
-                print(f"\n{estado} 👤: {comentario['cliente']} - ({comentario['hora']}):")
-                print(f"  - {comentario['mensaje']}")
-        else:
-            print("  (No hay solicitudes al camarero)")
-        
-        # Mostrar total acumulado
-        total = 0
+        # Pedidos entregados
+        print("\n--- PEDIDOS ENTREGADOS ---")
+        hay_entregados = False
         for i in range(1, mesa['capacidad'] + 1):
             cliente_key = f"cliente_{i}"
             if mesa[cliente_key]['nombre']:
-                total_cliente = sum(p['precio'] * p['cantidad'] for p in mesa[cliente_key]['pedidos'])
-                total += total_cliente
+                for pedido in mesa[cliente_key]['pedidos']:
+                    if pedido.get('entregado', False):
+                        hay_entregados = True
+                        hora_entrega = pedido.get('hora_entrega', 'reciente')
+                        print(f"\n👤 {mesa[cliente_key]['nombre']}:")
+                        print(f"  - {pedido['cantidad']}x {pedido['nombre']} ✅ Entregado ({hora_entrega})")
+
+        if not hay_entregados:
+            print("  (No hay pedidos entregados aún)")
         
+        # Mostrar total acumulado
+        total = sum(
+            p['precio'] * p['cantidad']
+            for i in range(1, mesa['capacidad'] + 1)
+            for p in mesa[f"cliente_{i}"]['pedidos']
+            if mesa[f"cliente_{i}"]['nombre']
+        )
         print(f"\n💵 TOTAL ACUMULADO: ${total}")
         
     def confirmar_envio_cocina(self, mesa_id):
