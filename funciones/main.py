@@ -72,7 +72,7 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
             if opcion == "0":
                 return
             elif opcion == "1":
-                sistema.hacer_pedido(mesa_id, cliente_key)
+                sistema_pedidos_clientes.hacer_pedido(mesa_id, cliente_key)
             elif opcion == "2":
                 sistema_pedidos_clientes.mostrar_resumen_grupal(mesa_id)
             elif opcion == "3":
@@ -88,9 +88,9 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
             elif opcion == "4":
                 sistema_pedidos_clientes.agregar_nota_pedido(mesa_id, cliente_key)
             elif opcion == "5":
-                sistema.llamar_camarero(mesa_id, cliente_key)
+                sistema_pedidos_clientes.llamar_camarero(mesa_id, cliente_key)
             elif opcion == "6":
-                if sistema.pagar_cuenta(mesa_id):
+                if sistema_pedidos_clientes.pagar_cuenta(mesa_id):
                     return 
             else:
                 print("Opción no válida")

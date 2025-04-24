@@ -99,120 +99,171 @@ class SistemaMesas:
                     return platos
     
     def mostrar_menu_completo(self):
-        """Muestra todo el menú organizado por etapas y categorías"""
+        """Muestra el menú completo y permite seleccionar platos"""
         etapas = ["entrada", "principal", "postre", "bebida"]
+        todos_platos = []  # Almacenará todos los platos con su referencia
         
+        print("\n=== MENÚ COMPLETO ===")
+        
+        # Primero mostramos todo el menú con numeración continua
+        contador_global = 1
         for etapa in etapas:
-            print(f"\n=== {etapa.upper()} ===")
             if etapa not in self.menu['platos']:
                 continue
                 
-            categorias = self.menu['platos'][etapa].keys()
-            
-            for categoria in categorias:
-                print(f"\n  --- {categoria.upper()} ---")
-                platos_categoria = self.menu['platos'][etapa][categoria]
-                
-                for i, plato in enumerate(platos_categoria, 1):
-                    print(f"\n  {i}. {plato['nombre']} - ${plato['precio']}")
-                    print(f"     Descripción: {plato['descripcion']}")
-                    print(f"     Ingredientes: {', '.join(plato['ingredientes'])}")
-                    if 'dietas' in plato and plato['dietas']:
-                        print(f"     Dietas: {', '.join(plato['dietas'])}")
+            print(f"\n--- {etapa.upper()} ---")
+            for categoria, platos in self.menu['platos'][etapa].items():
+                print(f"\n  {categoria.capitalize()}:")
+                for plato in platos:
+                    # Guardamos referencia con índice global
+                    todos_platos.append({
+                        'etapa': etapa,
+                        'categoria': categoria,
+                        'plato': plato
+                    })
+                    
+                    # Mostramos el plato
+                    dietas = ", ".join(plato['dietas']) if 'dietas' in plato else ""
+                    print(f"  {contador_global}. {plato['nombre']} - ${plato['precio']}")
+                    print(f"     {plato['descripcion']}")
+                    if dietas:
+                        print(f"     🏷️ {dietas}")
+                    
+                    contador_global += 1
         
-        input("\nPresione Enter para continuar...")
+        # Ahora permitimos seleccionar
+        while True:
+            try:
+                print("\n--- SELECCIÓN ---")
+                print("Ingrese el número del plato que desea (0 para volver)")
+                seleccion = int(input("> "))
+                
+                if seleccion == 0:
+                    return None
+                elif 1 <= seleccion <= len(todos_platos):
+                    plato_seleccionado = todos_platos[seleccion-1]['plato']
+                    print(f"\n✅ Seleccionaste: {plato_seleccionado['nombre']} - ${plato_seleccionado['precio']}")
+                    return plato_seleccionado
+                else:
+                    print("⚠️ Número inválido. Intente nuevamente.")
+            except ValueError:
+                print("⚠️ Por favor ingrese un número.")
     
     def filtrar_por_categoria(self):
-        """Filtra platos por categoría"""
-        # Primero recopilamos todas las categorías únicas de todas las etapas
-        categorias = set()
-        for etapa in self.menu['platos'].values():
-            categorias.update(etapa.keys())
-        categorias = sorted(categorias)
+        """Filtra platos por categoría con selección directa"""
+        # Obtener todas las categorías únicas
+        categorias = sorted({
+            categoria 
+            for etapa in self.menu['platos'].values() 
+            for categoria in etapa.keys()
+        })
         
-        print("\n--- CATEGORÍAS DISPONIBLES ---")
-        for i, cat in enumerate(categorias, 1):
-            print(f"{i}. {cat}")
-        print("0. Volver")
-        
-        try:
-            opcion = int(input("Seleccione categoría: "))
-            if opcion == 0:
-                return None
-            categoria = categorias[opcion-1]
+        while True:
+            print("\n--- FILTRAR POR CATEGORÍA ---")
+            print("Categorías disponibles:")
+            for i, cat in enumerate(categorias, 1):
+                print(f"{i}. {cat.capitalize()}")
+            print("0. Volver al menú anterior")
             
-            # Buscamos la categoría en todas las etapas
-            platos = []
-            for etapa in self.menu['platos'].values():
-                if categoria in etapa:
-                    platos.extend(etapa[categoria])
-            
-            self.mostrar_platos(platos)
-            return platos
-        except (ValueError, IndexError):
-            print("Opción inválida")
-            return None
-    
+            try:
+                opcion = int(input("\nSeleccione categoría: "))
+                if opcion == 0:
+                    return None
+                elif 1 <= opcion <= len(categorias):
+                    categoria = categorias[opcion-1]
+                    
+                    # Buscar platos en todas las etapas
+                    platos = [
+                        plato
+                        for etapa in self.menu['platos'].values()
+                        for plato in etapa.get(categoria, [])
+                    ]
+                    
+                    if not platos:
+                        print("\n⚠️ No hay platos en esta categoría")
+                        continue
+                        
+                    # Mostrar resultados
+                    print(f"\n--- PLATOS EN {categoria.upper()} ---")
+                    for i, plato in enumerate(platos, 1):
+                        dietas = ", ".join(plato['dietas']) if 'dietas' in plato else ""
+                        print(f"\n{i}. {plato['nombre']} - ${plato['precio']}")
+                        print(f"   {plato['descripcion']}")
+                        if dietas:
+                            print(f"   🏷️ {dietas}")
+                    
+                    # Permitir selección directa
+                    seleccion = int(input("\nSeleccione plato (0 para volver): "))
+                    if seleccion == 0:
+                        continue
+                    elif 1 <= seleccion <= len(platos):
+                        return platos[seleccion-1]
+                    else:
+                        print("⚠️ Número de plato inválido")
+                else:
+                    print("⚠️ Opción inválida")
+            except ValueError:
+                print("⚠️ Ingrese un número válido")
+
     def filtrar_por_dieta(self):
-        """Filtra platos por dieta especial"""
-        dietas = ["Vegano", "Sin gluten", "Vegetariano", "Sin lactosa", "Nut-free"]
+        """Filtra platos por dieta con selección directa"""
+        dietas_disponibles = [
+            "Vegano", "Sin gluten", "Vegetariano", 
+            "Sin lactosa", "Nut-free"
+        ]
         
-        print("\n--- DIETAS ESPECIALES ---")
-        for i, dieta in enumerate(dietas, 1):
-            print(f"{i}. {dieta}")
-        print("0. Volver")
-        
-        try:
-            opcion = int(input("Seleccione dieta: "))
-            if opcion == 0:
-                return None
-            dieta_seleccionada = dietas[opcion-1].lower()
+        while True:
+            print("\n--- FILTRAR POR DIETA ---")
+            print("Dietas especiales disponibles:")
+            for i, dieta in enumerate(dietas_disponibles, 1):
+                print(f"{i}. {dieta}")
+            print("0. Volver al menú anterior")
             
-            # Buscamos en todas las etapas y categorías
-            platos = []
-            for etapa in self.menu['platos'].values():
-                for categoria in etapa.values():
-                    for plato in categoria:
-                        if dieta_seleccionada in [d.lower() for d in plato.get('dietas', [])]:
-                            platos.append(plato)
-            
-            self.mostrar_platos(platos)
-            return platos
-        except (ValueError, IndexError):
-            print("Opción inválida")
-            return None
-    
-    def filtrar_por_etapa(self):
-        """Filtra platos por etapa"""
-        etapas = list(self.menu['platos'].keys())
-        
-        print("\n--- ETAPAS DEL MENÚ ---")
-        for i, etapa in enumerate(etapas, 1):
-            print(f"{i}. {etapa.capitalize()}")
-        print("0. Volver")
-        
-        try:
-            opcion = int(input("Seleccione etapa: "))
-            if opcion == 0:
-                return None
-            etapa = etapas[opcion-1]
-            
-            # Recopilamos todos los platos de la etapa seleccionada
-            platos = []
-            for categoria in self.menu['platos'][etapa].values():
-                platos.extend(categoria)
-            
-            self.mostrar_platos(platos)
-            return platos
-        except (ValueError, IndexError):
-            print("Opción inválida")
-            return None
+            try:
+                opcion = int(input("\nSeleccione dieta: "))
+                if opcion == 0:
+                    return None
+                elif 1 <= opcion <= len(dietas_disponibles):
+                    dieta_seleccionada = dietas_disponibles[opcion-1].lower()
+                    
+                    # Buscar platos que cumplan con la dieta
+                    platos = [
+                        plato
+                        for etapa in self.menu['platos'].values()
+                        for categoria in etapa.values()
+                        for plato in categoria
+                        if 'dietas' in plato and 
+                        any(d.lower() == dieta_seleccionada for d in plato['dietas'])
+                    ]
+                    
+                    if not platos:
+                        print(f"\n⚠️ No hay platos {dietas_disponibles[opcion-1].lower()}")
+                        continue
+                        
+                    # Mostrar resultados
+                    print(f"\n--- PLATOS {dietas_disponibles[opcion-1].upper()} ---")
+                    for i, plato in enumerate(platos, 1):
+                        print(f"\n{i}. {plato['nombre']} - ${plato['precio']}")
+                        print(f"   {plato['descripcion']}")
+                        print(f"   🏷️ {', '.join(plato['dietas'])}")
+                    
+                    # Permitir selección directa
+                    seleccion = int(input("\nSeleccione plato (0 para volver): "))
+                    if seleccion == 0:
+                        continue
+                    elif 1 <= seleccion <= len(platos):
+                        return platos[seleccion-1]
+                    else:
+                        print("⚠️ Número de plato inválido")
+                else:
+                    print("⚠️ Opción inválida")
+            except ValueError:
+                print("⚠️ Ingrese un número válido")
     
     def mostrar_platos(self, platos):
         """Muestra una lista de platos"""
         if not platos:
             print("\nNo se encontraron platos con esos criterios.")
-            input("Presione Enter para continuar...")
             return
         
         print("\n--- RESULTADOS ---")
@@ -222,118 +273,9 @@ class SistemaMesas:
             print(f"   Ingredientes: {', '.join(plato['ingredientes'])}")
             if 'dietas' in plato and plato['dietas']:
                 print(f"   Dietas: {', '.join(plato['dietas'])}")
-        
-        input("\nPresione Enter para continuar...")
     
-    def hacer_pedido(self, mesa_id, cliente_key):
-        """Gestiona el proceso de pedido"""
-        while True:
-            platos = self.menu_principal()
-            if platos is None:  # Opción "Volver"
-                break
-                
-            try:
-                opcion = int(input("Seleccione plato a agregar (0 para volver): "))
-                if opcion == 0:
-                    continue
-                if opcion < 1 or opcion > len(platos):
-                    print("Número de plato inválido")
-                    continue
-                    
-                plato = platos[opcion-1]
-                cantidad = int(input(f"Cantidad de '{plato['nombre']}': "))
-                
-                # Agregar pedido
-                nuevo_pedido = {
-                    'id': plato['id'],
-                    'nombre': plato['nombre'],
-                    'cantidad': cantidad,
-                    'precio': plato['precio'],
-                    'hora': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                }
-                
-                self.mesas[mesa_id][0][cliente_key]['pedidos'].append(nuevo_pedido)
-                self.guardar_mesas()
-                print(f"\n✅ {cantidad} x {plato['nombre']} agregado(s) a tu pedido")
-                
-            except ValueError:
-                print("Por favor ingrese un número válido")
-    
-    def llamar_camarero(self, mesa_id, cliente_key):
-        """Registra solicitud de camarero con validación y opción para volver"""
-        while True:
-            print("\n--- LLAMAR AL CAMARERO ---")
-            print("Ingrese su solicitud (ej: 'Necesito más pan')")
-            print("o escriba '0' para volver al menú anterior")
-            
-            mensaje = input("> ").strip()
-            
-            if mensaje == "0":
-                print("\nVolviendo al menú anterior...")
-                return False  # Indica que no se envió el mensaje
-            
-            if not mensaje:
-                print("\n⚠️ Error: No puede enviar una solicitud vacía.")
-                continue
-            
-            # Si llegamos aquí, el mensaje es válido
-            comentario = {
-                "mensaje": mensaje,
-                "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "resuelto": False,
-                "cliente": self.mesas[mesa_id][0][cliente_key]['nombre']
-            }
-            
-            self.mesas[mesa_id][0]['comentarios_camarero'].append(comentario)
-            self.guardar_mesas()
-            print("\n✅ Solicitud enviada al camarero")
-            return True  # Indica que el mensaje fue enviado
-    
-    def pagar_cuenta(self, mesa_id):
-        """Procesa el pago y guarda historial"""
-        # Verificar si hay platos registrados
-        hay_pedidos = False
-        for i in range(1, self.mesas[mesa_id][0]['capacidad'] + 1):
-            cliente_key = f"cliente_{i}"
-            cliente = self.mesas[mesa_id][0][cliente_key]
-            if cliente['pedidos']:
-                hay_pedidos = True
-                break
-        
-        if not hay_pedidos:
-            print("\n⚠️ No hay ningún plato registrado para cobrar")
-            return False  # Indica que no se completó el pago
-        
-        # Crear registro de historial
-        registro = {
-            "mesa": self.mesas[mesa_id][0]['nombre'],
-            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "clientes": [],
-            "total": 0
-        }
-        
-        # Calcular total y preparar historial
-        for i in range(1, self.mesas[mesa_id][0]['capacidad'] + 1):
-            cliente_key = f"cliente_{i}"
-            cliente = self.mesas[mesa_id][0][cliente_key]
-            
-            if cliente['nombre']:
-                total_cliente = sum(p['precio'] * p['cantidad'] for p in cliente['pedidos'])
-                registro["clientes"].append({
-                    "nombre": cliente['nombre'],
-                    "pedidos": cliente['pedidos'],
-                    "total": total_cliente
-                })
-                registro["total"] += total_cliente
-        
-        # Guardar historial
-        fecha_archivo = datetime.now().strftime("%Y%m%d_%H%M%S")
-        archivo_historial = os.path.join(HISTORIAL_DIR, f"mesa_{mesa_id}_{fecha_archivo}.json")
-        
-        with open(archivo_historial, 'w') as f:
-            json.dump(registro, f, indent=2, ensure_ascii=False)
-        
-        # Reiniciar mesa
+    def limpiar_mesa(self, mesa_id):
+        """Reinicia el estado de una mesa después de pagar"""
         mesa = self.mesas[mesa_id][0]
         mesa['estado'] = 'libre'
         
@@ -343,7 +285,4 @@ class SistemaMesas:
             mesa[cliente_key]['pedidos'] = []
         
         mesa['comentarios_camarero'] = []
-        self.guardar_mesas()
-        print(f"\n✅ Cuenta pagada - Total: ${registro['total']}")
-        print(f"Historial guardado en {archivo_historial}")
-        return True  # Indica que el pago se completó
+        self.guardar_mesas()   

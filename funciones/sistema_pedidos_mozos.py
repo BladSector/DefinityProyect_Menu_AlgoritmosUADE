@@ -50,14 +50,12 @@ class SistemaPedidosMozos:
                 # Marcar como entregado
                 pedido_seleccionado = pedidos_listos[opcion-1]['pedido']
                 pedido_seleccionado['entregado'] = True
-                pedido_seleccionado['hora_entrega'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                pedido_seleccionado['hora_entrega'] = datetime.now().strftime("%H:%M hs")
                 self.sistema_mesas.guardar_mesas()
                 
                 print(f"\n✅ Pedido marcado como entregado:")
                 print(f"Mesa {pedidos_listos[opcion-1]['mesa_id']} - {pedidos_listos[opcion-1]['cliente']}")
                 print(f"{pedido_seleccionado['cantidad']}x {pedido_seleccionado['nombre']}")
-                
-                input("\nPresione Enter para continuar...")
                 
             except ValueError:
                 print("Por favor ingrese un número válido")
@@ -95,8 +93,6 @@ class SistemaPedidosMozos:
         
         if not mesas_con_comentarios:
             print("No hay mesas con comentarios pendientes")
-        
-        input("\nPresione Enter para continuar...")
     
     def mostrar_mapa_mesas(self):
         """Muestra un mapa completo de todas las mesas con su estado"""
@@ -125,5 +121,3 @@ class SistemaPedidosMozos:
                     for comentario in mesa['comentarios_camarero']:
                         estado = "✅" if comentario['resuelto'] else "⚠️"
                         print(f"  {estado} {comentario['cliente']}: {comentario['mensaje']}")
-        
-        input("\nPresione Enter para continuar...")

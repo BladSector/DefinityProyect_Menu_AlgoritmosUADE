@@ -4,38 +4,13 @@
       "nombre": "Mesa 1",
       "capacidad": 4,
       "qr_url": "https://turestaurante.com/menu/mesa-1",
-      "estado": "ocupada",
+      "estado": "libre",
       "cliente_1": {
-        "nombre": "1",
-        "pedidos": [
-          {
-            "id": 1,
-            "nombre": "Ensalada César Vegana",
-            "cantidad": 1,
-            "precio": 8800,
-            "hora": "2025-04-23 14:41:40",
-            "en_cocina": true,
-            "hora_envio": "14:42:45",
-            "notas": [
-              {
-                "texto": "nueva nota",
-                "hora": "2025-04-23 15:03:06"
-              }
-            ]
-          },
-          {
-            "id": 1,
-            "nombre": "Ensalada César Vegana",
-            "cantidad": 1,
-            "precio": 8800,
-            "hora": "2025-04-23 15:09:51",
-            "en_cocina": true,
-            "hora_envio": "15:10:08"
-          }
-        ]
+        "nombre": "",
+        "pedidos": []
       },
       "cliente_2": {
-        "nombre": "sa",
+        "nombre": "",
         "pedidos": []
       },
       "cliente_3": {
@@ -46,26 +21,7 @@
         "nombre": "",
         "pedidos": []
       },
-      "comentarios_camarero": [
-        {
-          "mensaje": "mozo 1",
-          "hora": "2025-04-23 14:48:30",
-          "resuelto": false,
-          "cliente": "sa"
-        },
-        {
-          "mensaje": "saas",
-          "hora": "2025-04-23 14:51:15",
-          "resuelto": false,
-          "cliente": "sa"
-        },
-        {
-          "mensaje": "asdasdasd",
-          "hora": "2025-04-23 14:51:38",
-          "resuelto": false,
-          "cliente": "sa"
-        }
-      ]
+      "comentarios_camarero": []
     }
   ],
   "mesa2": [

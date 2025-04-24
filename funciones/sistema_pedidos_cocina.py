@@ -223,7 +223,7 @@ class SistemaPedidosCocina:
                 for p in mesa[cliente_key]['pedidos']:
                     if p['id'] == pedido['id']:
                         p['estado_cocina'] = self.estados_pedido['en_preparacion']
-                        p['hora_preparacion'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        p['hora_preparacion'] = datetime.now().strftime("%H:%M hs")
                         
                         # Notificar
                         mensaje = f"Pedido en preparación: {pedido['nombre']} para {pedido['cliente']}"
@@ -243,7 +243,7 @@ class SistemaPedidosCocina:
                 for p in mesa[cliente_key]['pedidos']:
                     if p['id'] == pedido['id']:
                         p['estado_cocina'] = self.estados_pedido['listo']
-                        p['hora_listo'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        p['hora_listo'] = datetime.now().strftime("%H:%M hs")
                         
                         # Notificar
                         mensaje = f"Pedido listo para entregar: {pedido['nombre']} para {pedido['cliente']}"
@@ -295,7 +295,7 @@ class SistemaPedidosCocina:
         
         mesa['notificaciones'].append({
             "mensaje": mensaje,
-            "hora": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "hora": datetime.now().strftime("%H:%M hs"),
             "tipo": "cocina"
         })
 
