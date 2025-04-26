@@ -1,9 +1,9 @@
 {
-  "mesa1": [
+  "1": [
     {
       "nombre": "Mesa 1",
-      "capacidad": 4,
       "qr_url": "https://turestaurante.com/menu/mesa-1",
+      "capacidad": 2,
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
@@ -13,22 +13,14 @@
         "nombre": "",
         "pedidos": []
       },
-      "cliente_3": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "cliente_4": {
-        "nombre": "",
-        "pedidos": []
-      },
       "comentarios_camarero": []
     }
   ],
-  "mesa2": [
+  "2": [
     {
       "nombre": "Mesa 2",
-      "capacidad": 6,
       "qr_url": "https://turestaurante.com/menu/mesa-2",
+      "capacidad": 4,
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
@@ -46,22 +38,14 @@
         "nombre": "",
         "pedidos": []
       },
-      "cliente_5": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "cliente_6": {
-        "nombre": "",
-        "pedidos": []
-      },
       "comentarios_camarero": []
     }
   ],
-  "mesa3": [
+  "3": [
     {
       "nombre": "Mesa 3",
-      "capacidad": 4,
       "qr_url": "https://turestaurante.com/menu/mesa-3",
+      "capacidad": 2,
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
@@ -71,39 +55,14 @@
         "nombre": "",
         "pedidos": []
       },
-      "cliente_3": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "cliente_4": {
-        "nombre": "",
-        "pedidos": []
-      },
       "comentarios_camarero": []
     }
   ],
-  "mesa4": [
+  "4": [
     {
       "nombre": "Mesa 4",
-      "capacidad": 2,
       "qr_url": "https://turestaurante.com/menu/mesa-4",
-      "estado": "libre",
-      "cliente_1": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "cliente_2": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "comentarios_camarero": []
-    }
-  ],
-  "mesa5": [
-    {
-      "nombre": "Mesa 5",
-      "capacidad": 8,
-      "qr_url": "https://turestaurante.com/menu/mesa-5",
+      "capacidad": 6,
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
@@ -129,22 +88,14 @@
         "nombre": "",
         "pedidos": []
       },
-      "cliente_7": {
-        "nombre": "",
-        "pedidos": []
-      },
-      "cliente_8": {
-        "nombre": "",
-        "pedidos": []
-      },
       "comentarios_camarero": []
     }
   ],
-  "mesa6": [
+  "5": [
     {
-      "nombre": "Mesa 6",
+      "nombre": "Mesa 5",
+      "qr_url": "https://turestaurante.com/menu/mesa-5",
       "capacidad": 4,
-      "qr_url": "https://turestaurante.com/menu/mesa-6",
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
