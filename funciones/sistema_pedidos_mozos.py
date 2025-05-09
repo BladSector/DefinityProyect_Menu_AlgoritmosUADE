@@ -51,23 +51,154 @@ class VisualizadorPedidosMozo:
         }
 
     def mostrar_mapa_mesas(self):
-        """Muestra un mapa completo de todas las mesas con su estado, clientes, pedidos y comentarios"""
-        print("\n--- MAPA DEL RESTAURANTE ---")
+        """Muestra un mapa completo de todas las mesas con su estado"""
+        while True:
+            print("\n=== MAPA DEL RESTAURANTE ===")
+            print("\nMesas disponibles:")
+            
+            # Primero mostrar todas las mesas y su estado
+            mesas_ocupadas = []
+            for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
+                mesa = mesa_data[0]
+                estado = "🟢 Libre" if mesa['estado'] == 'libre' else "🟠 Ocupada"
+                print(f"{len(mesas_ocupadas) + 1}. {mesa['nombre']} [{estado}]")
+                if mesa['estado'] == 'ocupada':
+                    mesas_ocupadas.append((mesa_id, mesa))
 
-        for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
-            mesa = mesa_data[0]
-            estado_mesa = "🟢 Libre" if mesa['estado'] == 'libre' else "🟠 Ocupada"
+            print("\n0. Volver al menú principal")
 
-            print(f"\n{mesa['nombre']} [{estado_mesa}]")
+            try:
+                opcion = int(input("\nSeleccione una mesa para ver detalles (número): "))
+                if opcion == 0:
+                    return
+                
+                if 1 <= opcion <= len(mesas_ocupadas):
+                    mesa_id, mesa = mesas_ocupadas[opcion - 1]
+                    self._mostrar_detalles_mesa(mesa_id, mesa)
+                else:
+                    print("ℹ️   Mesa libre. Seleccione una mesa ocupada.")
+            except ValueError:
+                print("Por favor ingrese un número válido")
 
-            if mesa['estado'] == 'ocupada':
-                for i in range(1, mesa['capacidad'] + 1):
-                    cliente_key = f"cliente_{i}"
-                    if mesa[cliente_key]['nombre']:
-                        print(f"\n 👤 {mesa[cliente_key]['nombre']}:")
-                        for pedido in mesa[cliente_key]['pedidos']:
-                            self._mostrar_detalle_pedido_mapa(pedido)
-                        self._mostrar_comentarios_cliente_mapa(mesa, cliente_key)
+    def _mostrar_detalles_mesa(self, mesa_id, mesa):
+        """Muestra los detalles de una mesa específica"""
+        print(f"\n=== {mesa['nombre']} ===")
+        
+        # Pedidos pendientes de enviar
+        print("\n--- PEDIDOS POR ENVIAR A COCINA ---")
+        hay_pendientes = False
+        clientes_pendientes = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_pendientes = []
+                for pedido in cliente.get('pedidos', []):
+                    if not pedido.get('en_cocina', False):
+                        pedidos_pendientes.append(pedido)
+                if pedidos_pendientes:
+                    clientes_pendientes[cliente['nombre']] = pedidos_pendientes
+                    hay_pendientes = True
+
+        if hay_pendientes:
+            for nombre_cliente, pedidos in clientes_pendientes.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} 🟡 Pendiente")
+                    if 'notas' in pedido and pedido['notas']:
+                        print("    📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      • {nota['texto']}")
+        else:
+            print("(No hay pedidos pendientes de enviar)")
+
+        # Pedidos en cocina
+        print("\n--- PEDIDOS EN COCINA ---")
+        hay_en_cocina = False
+        clientes_en_cocina = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_cocina = []
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('en_cocina', False) and not pedido.get('entregado', False):
+                        pedidos_cocina.append(pedido)
+                if pedidos_cocina:
+                    clientes_en_cocina[cliente['nombre']] = pedidos_cocina
+                    hay_en_cocina = True
+
+        if hay_en_cocina:
+            for nombre_cliente, pedidos in clientes_en_cocina.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    estado = pedido.get('estado_cocina', "🟢 En cocina")
+                    hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} {estado}{hora_envio}")
+                    if 'notas' in pedido and pedido['notas']:
+                        print("    📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      • {nota['texto']}")
+        else:
+            print("  (No hay pedidos en cocina)")
+
+        # Pedidos entregados
+        print("\n--- PEDIDOS ENTREGADOS ---")
+        hay_entregados = False
+        clientes_entregados = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_entregados = []
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('entregado', False):
+                        pedidos_entregados.append(pedido)
+                if pedidos_entregados:
+                    clientes_entregados[cliente['nombre']] = pedidos_entregados
+                    hay_entregados = True
+
+        if hay_entregados:
+            for nombre_cliente, pedidos in clientes_entregados.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} ✅ Entregado{hora_envio}")
+                    if 'notas' in pedido and pedido['notas']:
+                        print("    📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      • {nota['texto']}")
+        else:
+            print("  (No hay pedidos entregados aún)")
+
+        # Solicitudes al camarero
+        print("\n--- SOLICITUDES AL CAMARERO ---")
+        hay_solicitudes = False
+        solicitudes_por_cliente = {}
+        
+        if 'comentarios_camarero' in mesa:
+            for comentario in mesa['comentarios_camarero']:
+                if not comentario.get('resuelto', False):
+                    cliente = comentario.get('cliente', 'Cliente')
+                    if cliente not in solicitudes_por_cliente:
+                        solicitudes_por_cliente[cliente] = []
+                    solicitudes_por_cliente[cliente].append(comentario)
+                    hay_solicitudes = True
+
+        if hay_solicitudes:
+            for nombre_cliente, solicitudes in solicitudes_por_cliente.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for solicitud in solicitudes:
+                    estado = "💬 Pendiente" if not solicitud.get('resuelto', False) else "✅ Realizado"
+                    hora_solicitud = f" [Enviado: {solicitud.get('hora', 'No registrada')}]"
+                    print(f"  📢 {solicitud.get('mensaje', '')}{hora_solicitud} [{estado}]")
+        else:
+            print("  (No hay solicitudes pendientes)")
+
+        input("\nPresione Enter para volver al mapa de mesas...")
 
     def _mostrar_detalle_pedido_mapa(self, pedido):
         """Muestra los detalles del pedido para el mapa, incluyendo estado y notas"""
@@ -124,16 +255,18 @@ class SistemaPedidosMozos:
         while True:
             comentarios_pendientes = self._obtener_comentarios_pendientes()
             if not comentarios_pendientes:
-                print("\nNo hay comentarios pendientes.")
+                print("\nℹ️ No hay comentarios pendientes.")
                 input("Presione Enter para volver al menú...")
                 return
 
             print("\n--- COMENTARIOS PENDIENTES ---")
             for i, comentario_info in enumerate(comentarios_pendientes, 1):
-                print(f"{i}. Mesa: {comentario_info['mesa_nombre']}, Cliente: {comentario_info['cliente']}, Comentario: {comentario_info['texto']}")
+                estado = "💬 Pendiente"
+                hora_envio = f" [Enviado: {comentario_info.get('hora', 'No registrada')}]"
+                print(f"{i}. {comentario_info['mesa_nombre']}, 👤 Cliente: {comentario_info['cliente']}, 📝 Comentario: {comentario_info['texto']}{hora_envio} [{estado}]")
             print("\n0. Volver al menú principal")
 
-            opcion = input("Seleccione un comentario para marcar como realizado (número) o 0 para volver: ")
+            opcion = input("Seleccione un comentario para marcar como realizado ✅ (número) o 0 para volver: ")
             if opcion == '0':
                 return
             try:
@@ -141,9 +274,9 @@ class SistemaPedidosMozos:
                 if 0 <= indice < len(comentarios_pendientes):
                     comentario = comentarios_pendientes[indice]
                     if self._marcar_comentario_realizado(comentario['mesa_id'], comentario['cliente'], comentario['texto']):
-                        print("Comentario marcado como realizado.")
+                        print("✅ Comentario marcado como realizado.")
                     else:
-                        print("Error al marcar el comentario como realizado.")
+                        print("⚠️ Error al marcar el comentario como realizado.")
                 else:
                     print("Número de comentario inválido.")
             except ValueError:
@@ -154,14 +287,15 @@ class SistemaPedidosMozos:
         comentarios_pendientes = []
         for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
             mesa = mesa_data[0]
-            if 'comentarios' in mesa:
-                for comentario in mesa['comentarios']:
-                    if comentario['estado'] == 'pendiente':
+            if 'comentarios_camarero' in mesa:
+                for comentario in mesa['comentarios_camarero']:
+                    if not comentario.get('resuelto', False):
                         comentarios_pendientes.append({
                             'mesa_id': mesa_id,
                             'mesa_nombre': mesa['nombre'],
                             'cliente': comentario['cliente'],
-                            'texto': comentario['texto']
+                            'texto': comentario['mensaje'],
+                            'hora': comentario.get('hora', 'No registrada')
                         })
         return comentarios_pendientes
 
@@ -172,10 +306,10 @@ class SistemaPedidosMozos:
             return False
 
         mesa = mesa_data[0]
-        if 'comentarios' in mesa:
-            for comentario in mesa['comentarios']:
-                if comentario['cliente'] == cliente_nombre and comentario['texto'] == comentario_texto and comentario['estado'] == 'pendiente':
-                    comentario['estado'] = 'realizado'
+        if 'comentarios_camarero' in mesa:
+            for comentario in mesa['comentarios_camarero']:
+                if comentario['cliente'] == cliente_nombre and comentario['mensaje'] == comentario_texto and not comentario.get('resuelto', False):
+                    comentario['resuelto'] = True
                     try:
                         self.sistema_mesas.guardar_mesas()
                         return True
@@ -189,16 +323,16 @@ class SistemaPedidosMozos:
         while True:
             pedidos_listos = self._obtener_pedidos_listos_para_entregar()
             if not pedidos_listos:
-                print("\nNo hay pedidos listos para entregar.")
+                print("\nℹ️ No hay pedidos listos para entregar.")
                 input("Presione Enter para volver al menú...")
                 return
 
             print("\n--- PEDIDOS LISTOS PARA ENTREGAR ---")
             for i, pedido_info in enumerate(pedidos_listos, 1):
-                print(f"{i}. Mesa: {pedido_info['mesa_nombre']}, Cliente: {pedido_info['cliente']}, Pedido: {pedido_info['nombre']}")
+                print(f"{i}. {pedido_info['mesa_nombre']}, 👤: {pedido_info['cliente']}, Pedido: {pedido_info['nombre']}")
             print("\n0. Volver al menú principal")
 
-            opcion = input("Seleccione un pedido para marcar como entregado (número) o 0 para volver: ")
+            opcion = input("📋 Seleccione un pedido para marcar como entregado (número) o 0 para volver: ")
             if opcion == '0':
                 return
             try:
@@ -206,7 +340,7 @@ class SistemaPedidosMozos:
                 if 0 <= indice < len(pedidos_listos):
                     pedido = pedidos_listos[indice]
                     if self._marcar_pedido_entregado(pedido['mesa_id'], pedido['cliente'], pedido['id']):
-                        print(f"Pedido '{pedido['nombre']}' marcado como entregado.")
+                        print(f"\n✅ Pedido '{pedido['nombre']}' marcado como entregado.")
                     else:
                         print("Error al marcar el pedido como entregado.")
                 else:

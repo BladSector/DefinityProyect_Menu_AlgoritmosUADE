@@ -1,0 +1,55 @@
+{
+  "mesa": "Mesa 1",
+  "fecha": "2025-05-08 17:09",
+  "cliente": "Santiago 1",
+  "pedidos": [
+    {
+      "id": 34,
+      "nombre": "Fettuccine sin gluten",
+      "cantidad": 1,
+      "precio": 14800,
+      "hora": "16:30 hs",
+      "en_cocina": true,
+      "notas": [
+        {
+          "texto": "Sin sal",
+          "hora": "16:41 hs"
+        },
+        {
+          "texto": "SIn sal 2",
+          "hora": "16:55 hs"
+        }
+      ],
+      "hora_envio": "16:43 hs",
+      "estado_cocina": "✅ LISTO PARA ENTREGAR",
+      "entregado": true
+    },
+    {
+      "id": 9,
+      "nombre": "Solomillo de res",
+      "cantidad": 1,
+      "precio": 22000,
+      "hora": "16:32 hs",
+      "en_cocina": true,
+      "hora_envio": "16:43 hs",
+      "estado_cocina": "✅ LISTO PARA ENTREGAR",
+      "entregado": true
+    }
+  ],
+  "total": 36800,
+  "notificaciones": [],
+  "comentarios_camarero": [
+    {
+      "mensaje": "Necesito pan",
+      "hora": "16:42 hs",
+      "resuelto": false,
+      "cliente": "Santiago 1"
+    },
+    {
+      "mensaje": "Necesito pan 2",
+      "hora": "16:43 hs",
+      "resuelto": false,
+      "cliente": "Santiago 1"
+    }
+  ]
+}

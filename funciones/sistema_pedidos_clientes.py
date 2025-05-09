@@ -104,7 +104,7 @@ class SistemaPedidosClientes:
                     return None
                 elif 1 <= seleccion <= len(todos_platos):
                     plato_seleccionado = todos_platos[seleccion - 1]['plato']
-                    print(f"\n✅ Seleccionaste: {plato_seleccionado['nombre']} - ${plato_seleccionado['precio']}")
+                    print(f"\nSeleccionaste: {plato_seleccionado['nombre']} - ${plato_seleccionado['precio']}")
                     return plato_seleccionado
                 else:
                     print("⚠️ Número inválido. Intente nuevamente.")
@@ -177,6 +177,125 @@ class SistemaPedidosClientes:
             except ValueError:
                 print("⚠️ Por favor ingrese un número.")
 
+    def _mostrar_pedidos_mesa(self, mesa, mostrar_total=False):
+        """Función base para mostrar los pedidos de una mesa"""
+        # Pedidos pendientes de enviar
+        print("\n--- PEDIDOS POR ENVIAR A COCINA ---")
+        hay_pendientes = False
+        clientes_pendientes = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_pendientes = []
+                for pedido in cliente.get('pedidos', []):
+                    if not pedido.get('en_cocina', False):
+                        pedidos_pendientes.append(pedido)
+                if pedidos_pendientes:
+                    clientes_pendientes[cliente['nombre']] = pedidos_pendientes
+                    hay_pendientes = True
+
+        if hay_pendientes:
+            for nombre_cliente, pedidos in clientes_pendientes.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} 🟡 Pendiente")
+                    if 'notas' in pedido and pedido['notas']:
+                        print("    📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      • {nota['texto']}")
+        else:
+            print("(No hay pedidos pendientes de enviar)")
+
+        # Pedidos en cocina
+        print("\n--- PEDIDOS EN COCINA ---")
+        hay_en_cocina = False
+        clientes_en_cocina = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_cocina = []
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('en_cocina', False) and not pedido.get('entregado', False):
+                        pedidos_cocina.append(pedido)
+                if pedidos_cocina:
+                    clientes_en_cocina[cliente['nombre']] = pedidos_cocina
+                    hay_en_cocina = True
+
+        if hay_en_cocina:
+            for nombre_cliente, pedidos in clientes_en_cocina.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    estado = pedido.get('estado_cocina', "🟢 En cocina")
+                    retraso = f" (⏳ Retraso: {pedido.get('retraso_minutos')} min)" if pedido.get('retraso_minutos') else ""
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} {estado}{retraso}")
+                    if 'notas' in pedido and pedido['notas']:
+                        print("    📝 Notas:")
+                        for nota in pedido['notas']:
+                            print(f"      • {nota['texto']}")
+        else:
+            print("  (No hay pedidos en cocina)")
+
+        # Pedidos entregados
+        print("\n--- PEDIDOS ENTREGADOS ---")
+        hay_entregados = False
+        clientes_entregados = {}
+        
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                pedidos_entregados = []
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('entregado', False):
+                        pedidos_entregados.append(pedido)
+                if pedidos_entregados:
+                    clientes_entregados[cliente['nombre']] = pedidos_entregados
+                    hay_entregados = True
+
+        if hay_entregados:
+            for nombre_cliente, pedidos in clientes_entregados.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for pedido in pedidos:
+                    print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} ✅ Entregado")
+        else:
+            print("  (No hay pedidos entregados aún)")
+
+        # Solicitudes al camarero
+        print("\n--- SOLICITUDES AL CAMARERO ---")
+        hay_solicitudes = False
+        solicitudes_por_cliente = {}
+        
+        if 'comentarios_camarero' in mesa:
+            for comentario in mesa['comentarios_camarero']:
+                if not comentario.get('resuelto', False):
+                    cliente = comentario.get('cliente', 'Cliente')
+                    if cliente not in solicitudes_por_cliente:
+                        solicitudes_por_cliente[cliente] = []
+                    solicitudes_por_cliente[cliente].append(comentario)
+                    hay_solicitudes = True
+
+        if hay_solicitudes:
+            for nombre_cliente, solicitudes in solicitudes_por_cliente.items():
+                print(f"\n👤 {nombre_cliente}:")
+                for solicitud in solicitudes:
+                    print(f"  📢 {solicitud.get('mensaje', '')}")
+        else:
+            print("  (No hay solicitudes pendientes)")
+
+        # Mostrar total acumulado si se solicita
+        if mostrar_total:
+            total = sum(
+                p.get('precio', 0) * p.get('cantidad', 1)
+                for i in range(1, mesa.get('capacidad', 0) + 1)
+                for cliente in [mesa.get(f"cliente_{i}")] if cliente and cliente.get('nombre')
+                for p in cliente.get('pedidos', [])
+            )
+            print(f"\n💵 TOTAL ACUMULADO: ${total}")
+
     def mostrar_resumen_grupal(self, mesa_id):
         """Muestra el resumen grupal con estados actualizados."""
         mesa = self._obtener_mesa(mesa_id)
@@ -189,66 +308,7 @@ class SistemaPedidosClientes:
             return
 
         print("\n=== RESUMEN GRUPAL ===")
-
-        # Pedidos pendientes de enviar
-        print("\n--- PEDIDOS POR ENVIAR A COCINA ---")
-        hay_pendientes = False
-        for i in range(1, mesa.get('capacidad', 0) + 1):
-            cliente_key = f"cliente_{i}"
-            cliente = mesa.get(cliente_key)
-            if cliente and cliente.get('nombre'):
-                for pedido in cliente.get('pedidos', []):
-                    if not pedido.get('en_cocina', False):
-                        hay_pendientes = True
-                        print(f"\n👤 {cliente['nombre']}:")
-                        print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} 🟡 Pendiente")
-
-        if not hay_pendientes:
-            print("(No hay pedidos pendientes de enviar)")
-
-        # Pedidos en cocina
-        print("\n--- PEDIDOS EN COCINA ---")
-        hay_en_cocina = False
-        for i in range(1, mesa.get('capacidad', 0) + 1):
-            cliente_key = f"cliente_{i}"
-            cliente = mesa.get(cliente_key)
-            if cliente and cliente.get('nombre'):
-                for pedido in cliente.get('pedidos', []):
-                    if pedido.get('en_cocina', False) and not pedido.get('entregado', False):
-                        hay_en_cocina = True
-                        estado = pedido.get('estado_cocina', "🟢 En cocina")
-                        retraso = f" (⏳ Retraso: {pedido.get('retraso_minutos')} min)" if pedido.get('retraso_minutos') else ""
-                        print(f"\n👤 {cliente['nombre']}:")
-                        print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} {estado}{retraso}")
-
-        if not hay_en_cocina:
-            print("  (No hay pedidos en cocina)")
-
-        # Pedidos entregados
-        print("\n--- PEDIDOS ENTREGADOS ---")
-        hay_entregados = False
-        for i in range(1, mesa.get('capacidad', 0) + 1):
-            cliente_key = f"cliente_{i}"
-            cliente = mesa.get(cliente_key)
-            if cliente and cliente.get('nombre'):
-                for pedido in cliente.get('pedidos', []):
-                    if pedido.get('entregado', False):
-                        hay_entregados = True
-                        hora_entrega = pedido.get('hora_entrega', 'reciente')
-                        print(f"\n👤 {cliente['nombre']}:")
-                        print(f"  - {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} ✅ Entregado ({hora_entrega})")
-
-        if not hay_entregados:
-            print("  (No hay pedidos entregados aún)")
-
-        # Mostrar total acumulado
-        total = sum(
-            p.get('precio', 0) * p.get('cantidad', 1)
-            for i in range(1, mesa.get('capacidad', 0) + 1)
-            for cliente in [mesa.get(f"cliente_{i}")] if cliente and cliente.get('nombre')
-            for p in cliente.get('pedidos', [])
-        )
-        print(f"\n💵 TOTAL ACUMULADO: ${total}")
+        self._mostrar_pedidos_mesa(mesa, mostrar_total=True)
 
     def confirmar_envio_cocina(self, mesa_id):
         """Confirma el envío del pedido a cocina si hay pedidos nuevos."""
@@ -477,49 +537,15 @@ class SistemaPedidosClientes:
         else:
             return self._pagar_individual(mesa)
 
-    def _pagar_individual(self, mesa):
-        """Procesa el pago individual del cliente actual."""
-        cliente_actual_key = self.cliente_actual
-        cliente = mesa.get(cliente_actual_key)
-
-        if not cliente or not cliente.get('nombre'):
-            print("\n⚠️ Error: No se pudo identificar al cliente actual para el pago individual.")
-            return False
-
-        registro_individual = {
-            "mesa": mesa.get('nombre', f"Mesa (sin ID)"),
-            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "cliente": cliente['nombre'],
-            "pedidos": cliente.get('pedidos', []),
-            "total": sum(p.get('precio', 0) * p.get('cantidad', 1) for p in cliente.get('pedidos', []))
-        }
-
-        historial_dir = os.path.join("data", "historial_pagos")
-        os.makedirs(historial_dir, exist_ok=True)
-        fecha_archivo = datetime.now().strftime("%Y%m%d_%H%M%S")
-        archivo_historial = os.path.join(historial_dir, f"individual_{cliente['nombre'].replace(' ', '_')}_{fecha_archivo}.json")
-
-        try:
-            with open(archivo_historial, 'w', encoding='utf-8') as f:
-                json.dump(registro_individual, f, indent=2, ensure_ascii=False)
-            print(f"📁 Historial de pago individual guardado para {cliente['nombre']} en: {archivo_historial}")
-        except Exception as e:
-            print(f"⚠️ Error al guardar el historial de pago individual: {e}")
-            return False
-
-        cliente['pedidos'] = []
-        self._guardar_cambios()
-
-        print(f"\n✅ Cuenta individual pagada por {cliente['nombre']} - Total: ${registro_individual['total']}")
-        return True
-
     def _pagar_grupal(self, mesa_id, mesa):
         """Procesa el pago grupal de todos los clientes en la mesa."""
         registro_grupal = {
             "mesa": mesa.get('nombre', f"Mesa ID: {mesa_id}"),
             "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "clientes": [],
-            "total": 0
+            "total": 0,
+            "notificaciones": mesa.get('notificaciones', []),
+            "comentarios_camarero": mesa.get('comentarios_camarero', [])
         }
 
         for i in range(1, mesa.get('capacidad', 0) + 1):
@@ -547,8 +573,95 @@ class SistemaPedidosClientes:
             print(f"⚠️ Error al guardar el historial de pago grupal: {e}")
             return False
 
-        self._limpiar_mesa(mesa_id)
+        # Limpiar la mesa y liberarla
+        mesa['estado'] = 'libre'
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            mesa[cliente_key] = {
+                'nombre': '',
+                'pedidos': []
+            }
+        
+        # Limpiar cualquier notificación o comentario pendiente
+        if 'notificaciones' in mesa:
+            del mesa['notificaciones']
+        if 'comentarios_camarero' in mesa:
+            del mesa['comentarios_camarero']
+
         self._guardar_cambios()
 
         print(f"\n✅ Cuenta grupal pagada - Total: ${registro_grupal['total']}")
+        print("✅ Mesa liberada y lista para nuevos clientes")
         return True
+
+    def _pagar_individual(self, mesa):
+        """Procesa el pago individual del cliente actual."""
+        cliente_actual_key = self.cliente_actual
+        cliente = mesa.get(cliente_actual_key)
+
+        if not cliente or not cliente.get('nombre'):
+            print("\n⚠️ Error: No se pudo identificar al cliente actual para el pago individual.")
+            return False
+
+        registro_individual = {
+            "mesa": mesa.get('nombre', f"Mesa (sin ID)"),
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "cliente": cliente['nombre'],
+            "pedidos": cliente.get('pedidos', []),
+            "total": sum(p.get('precio', 0) * p.get('cantidad', 1) for p in cliente.get('pedidos', [])),
+            "notificaciones": mesa.get('notificaciones', []),
+            "comentarios_camarero": mesa.get('comentarios_camarero', [])
+        }
+
+        historial_dir = os.path.join("data", "historial_pagos")
+        os.makedirs(historial_dir, exist_ok=True)
+        fecha_archivo = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archivo_historial = os.path.join(historial_dir, f"individual_{cliente['nombre'].replace(' ', '_')}_{fecha_archivo}.json")
+
+        try:
+            with open(archivo_historial, 'w', encoding='utf-8') as f:
+                json.dump(registro_individual, f, indent=2, ensure_ascii=False)
+            print(f"📁 Historial de pago individual guardado para {cliente['nombre']} en: {archivo_historial}")
+        except Exception as e:
+            print(f"⚠️ Error al guardar el historial de pago individual: {e}")
+            return False
+
+        # Limpiar los pedidos del cliente actual
+        cliente['pedidos'] = []
+        cliente['nombre'] = ''
+
+        # Verificar si quedan otros clientes en la mesa
+        quedan_clientes = False
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            if mesa[cliente_key].get('nombre'):
+                quedan_clientes = True
+                break
+
+        # Si no quedan clientes, liberar la mesa
+        if not quedan_clientes:
+            mesa['estado'] = 'libre'
+            # Limpiar cualquier notificación o comentario pendiente
+            if 'notificaciones' in mesa:
+                del mesa['notificaciones']
+            if 'comentarios_camarero' in mesa:
+                del mesa['comentarios_camarero']
+            print("\n✅ Mesa liberada y lista para nuevos clientes")
+
+        self._guardar_cambios()
+
+        print(f"\n✅ Cuenta individual pagada por {cliente['nombre']} - Total: ${registro_individual['total']}")
+        return True
+
+    def mostrar_mapa_mesas(self):
+        """Muestra un mapa completo de todas las mesas con su estado"""
+        print("\n=== MAPA DEL RESTAURANTE ===")
+
+        for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
+            mesa = mesa_data[0]
+            estado = "🟢 Libre" if mesa['estado'] == 'libre' else "🟠 Ocupada"
+
+            print(f"\n{mesa['nombre']} [{estado}]")
+
+            if mesa['estado'] == 'ocupada':
+                self._mostrar_pedidos_mesa(mesa, mostrar_total=False)
