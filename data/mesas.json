@@ -12,7 +12,8 @@
       "cliente_2": {
         "nombre": "",
         "pedidos": []
-      }
+      },
+      "comentarios_camarero": []
     }
   ],
   "2": [

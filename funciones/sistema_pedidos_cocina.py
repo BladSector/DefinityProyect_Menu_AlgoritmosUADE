@@ -231,12 +231,10 @@ class SistemaPedidosCocina:
         self.notificaciones = ManejadorNotificaciones(sistema_mesas)
         self.visualizador = VisualizadorPedidos(sistema_mesas)
         self.estados_pedido = {
-            'preparar': '🟢 PREPARAR AHORA',
-            'normal': '🟡 NORMAL',
-            'cancelado': '🔴 CANCELADO',
-            'agregado': '🔵 AGREGADO',
+            'pendiente': '⏳ PENDIENTE',
             'en_preparacion': '👨‍🍳 EN PREPARACIÓN',
-            'listo': '✅ LISTO PARA ENTREGAR'
+            'listo': '✅ LISTO PARA ENTREGAR',
+            'cancelado': '🔴 CANCELADO'
         }
 
     def mostrar_mapa_mesas(self):
@@ -290,6 +288,7 @@ class SistemaPedidosCocina:
     def _recolectar_mesas_activas(self):
         """Recolecta mesas con pedidos activos excluyendo bebidas"""
         mesas_activas = {}
+        
         for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
             if not self._validar_mesa_estructura(mesa_data):
                 continue
@@ -297,13 +296,21 @@ class SistemaPedidosCocina:
             mesa = mesa_data[0]
             if mesa['estado'] == 'ocupada':
                 pedidos = self.procesar_pedidos_mesa(mesa_id)
-                pedidos_cocina = [p for p in pedidos if not p.get('es_bebida')]
+                
+                # Solo incluir pedidos que han sido enviados a cocina y tienen un estado válido
+                pedidos_cocina = [
+                    p for p in pedidos 
+                    if not p.get('es_bebida') 
+                    and p.get('en_cocina', False)
+                ]
+                
                 if pedidos_cocina:
                     mesas_activas[mesa_id] = {
                         'nombre': mesa['nombre'],
                         'pedidos': pedidos_cocina,
                         'comentarios': mesa.get('comentarios_camarero', [])
                     }
+        
         return mesas_activas
 
     def _mostrar_lista_mesas(self, mesas_activas):
@@ -311,10 +318,11 @@ class SistemaPedidosCocina:
         print("\n--- PEDIDOS ACTIVOS EN COCINA ---")
         print("\nMesas con pedidos activos:")
         for i, mesa_id in enumerate(mesas_activas.keys(), 1):
-            num_pendientes = sum(1 for p in mesas_activas[mesa_id]['pedidos'] if p.get('estado_cocina') not in [self.estados_pedido['en_preparacion'], self.estados_pedido['listo']])
+            num_pendientes = sum(1 for p in mesas_activas[mesa_id]['pedidos'] if p.get('estado_cocina') == self.estados_pedido['pendiente'])
             num_en_preparacion = sum(1 for p in mesas_activas[mesa_id]['pedidos'] if p.get('estado_cocina') == self.estados_pedido['en_preparacion'])
             num_listos = sum(1 for p in mesas_activas[mesa_id]['pedidos'] if p.get('estado_cocina') == self.estados_pedido['listo'])
-            print(f"{i}. {mesas_activas[mesa_id]['nombre']} (Pendientes: {num_pendientes}, En Prep: {num_en_preparacion}, Listos: {num_listos})")
+            num_cancelados = sum(1 for p in mesas_activas[mesa_id]['pedidos'] if p.get('estado_cocina') == self.estados_pedido['cancelado'])
+            print(f"{i}. {mesas_activas[mesa_id]['nombre']} (Pendientes: {num_pendientes}, En Prep: {num_en_preparacion}, Listos: {num_listos}, Cancelados: {num_cancelados})")
         print("\n0. Volver al menú principal")
 
     def _solicitar_opcion_mesa(self, mesas_activas):
@@ -345,22 +353,25 @@ class SistemaPedidosCocina:
             print("\n🍽️ Pedidos (Cocina):")
             
             # Separar pedidos por estado
-            pedidos_nuevos = []
+            pedidos_pendientes = []
             pedidos_en_preparacion = []
             pedidos_listos = []
+            pedidos_cancelados = []
             
             for pedido in pedidos_cocina:
-                if pedido.get('estado_cocina') == '✅ LISTO PARA ENTREGAR':
+                if pedido.get('estado_cocina') == self.estados_pedido['listo']:
                     pedidos_listos.append(pedido)
-                elif pedido.get('estado_cocina') == '👨‍🍳 EN PREPARACIÓN':
+                elif pedido.get('estado_cocina') == self.estados_pedido['en_preparacion']:
                     pedidos_en_preparacion.append(pedido)
+                elif pedido.get('estado_cocina') == self.estados_pedido['cancelado']:
+                    pedidos_cancelados.append(pedido)
                 else:
-                    pedidos_nuevos.append(pedido)
+                    pedidos_pendientes.append(pedido)
 
-            # Mostrar pedidos nuevos primero
-            if pedidos_nuevos:
-                print("\n📝 Pedidos Nuevos:")
-                for i, pedido in enumerate(pedidos_nuevos, 1):
+            # Mostrar pedidos pendientes
+            if pedidos_pendientes:
+                print("\n⏳ Pedidos Pendientes:")
+                for i, pedido in enumerate(pedidos_pendientes, 1):
                     hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
                     print(f"{i}. {pedido['cantidad']}x {pedido['nombre']} - Cliente: {pedido['cliente']}{hora_envio}")
                     if pedido.get('notas'):
@@ -369,7 +380,7 @@ class SistemaPedidosCocina:
             # Mostrar pedidos en preparación
             if pedidos_en_preparacion:
                 print("\n👨‍🍳 Pedidos en Preparación:")
-                for i, pedido in enumerate(pedidos_en_preparacion, len(pedidos_nuevos) + 1):
+                for i, pedido in enumerate(pedidos_en_preparacion, len(pedidos_pendientes) + 1):
                     hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
                     print(f"{i}. {pedido['cantidad']}x {pedido['nombre']} - Cliente: {pedido['cliente']}{hora_envio}")
                     if pedido.get('notas'):
@@ -378,7 +389,16 @@ class SistemaPedidosCocina:
             # Mostrar pedidos listos para entregar
             if pedidos_listos:
                 print("\n✅ Pedidos Listos para Entregar:")
-                for i, pedido in enumerate(pedidos_listos, len(pedidos_nuevos) + len(pedidos_en_preparacion) + 1):
+                for i, pedido in enumerate(pedidos_listos, len(pedidos_pendientes) + len(pedidos_en_preparacion) + 1):
+                    hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
+                    print(f"{i}. {pedido['cantidad']}x {pedido['nombre']} - Cliente: {pedido['cliente']}{hora_envio}")
+                    if pedido.get('notas'):
+                        print(f"   📝 Notas: {pedido['notas'][-1]['texto']}")
+
+            # Mostrar pedidos cancelados
+            if pedidos_cancelados:
+                print("\n🔴 Pedidos Cancelados:")
+                for i, pedido in enumerate(pedidos_cancelados, len(pedidos_pendientes) + len(pedidos_en_preparacion) + len(pedidos_listos) + 1):
                     hora_envio = f" [Enviado: {pedido.get('hora_envio', 'No registrada')}]"
                     print(f"{i}. {pedido['cantidad']}x {pedido['nombre']} - Cliente: {pedido['cliente']}{hora_envio}")
                     if pedido.get('notas'):
@@ -392,12 +412,14 @@ class SistemaPedidosCocina:
                     return
 
                 # Determinar en qué lista está el pedido seleccionado
-                if 1 <= opcion <= len(pedidos_nuevos):
-                    pedido_seleccionado = pedidos_nuevos[opcion - 1]
-                elif len(pedidos_nuevos) < opcion <= len(pedidos_nuevos) + len(pedidos_en_preparacion):
-                    pedido_seleccionado = pedidos_en_preparacion[opcion - len(pedidos_nuevos) - 1]
-                elif len(pedidos_nuevos) + len(pedidos_en_preparacion) < opcion <= len(pedidos_nuevos) + len(pedidos_en_preparacion) + len(pedidos_listos):
-                    pedido_seleccionado = pedidos_listos[opcion - len(pedidos_nuevos) - len(pedidos_en_preparacion) - 1]
+                if 1 <= opcion <= len(pedidos_pendientes):
+                    pedido_seleccionado = pedidos_pendientes[opcion - 1]
+                elif len(pedidos_pendientes) < opcion <= len(pedidos_pendientes) + len(pedidos_en_preparacion):
+                    pedido_seleccionado = pedidos_en_preparacion[opcion - len(pedidos_pendientes) - 1]
+                elif len(pedidos_pendientes) + len(pedidos_en_preparacion) < opcion <= len(pedidos_pendientes) + len(pedidos_en_preparacion) + len(pedidos_listos):
+                    pedido_seleccionado = pedidos_listos[opcion - len(pedidos_pendientes) - len(pedidos_en_preparacion) - 1]
+                elif len(pedidos_pendientes) + len(pedidos_en_preparacion) + len(pedidos_listos) < opcion <= len(pedidos_pendientes) + len(pedidos_en_preparacion) + len(pedidos_listos) + len(pedidos_cancelados):
+                    pedido_seleccionado = pedidos_cancelados[opcion - len(pedidos_pendientes) - len(pedidos_en_preparacion) - len(pedidos_listos) - 1]
                 else:
                     print("Número de pedido inválido")
                     continue
@@ -411,33 +433,61 @@ class SistemaPedidosCocina:
         print(f"\n--- Gestionando pedido: {pedido['cantidad']}x {pedido['nombre']} ---")
         print(f"Cliente: {pedido['cliente']}")
         
-        # Si el pedido ya está listo para entregar, no permitir más cambios
-        if pedido.get('estado_cocina') == '✅ LISTO PARA ENTREGAR':
-            print("\n⚠️ Este pedido ya está listo para entregar y no puede ser modificado.")
+        # Si el pedido ya está listo para entregar o cancelado, no permitir más cambios
+        if pedido.get('estado_cocina') in [self.estados_pedido['listo'], self.estados_pedido['cancelado']]:
+            print("\n⚠️ Este pedido no puede ser modificado.")
+            input("\nPresione Enter para volver...")
+            return
+
+        # Verificar si el pedido ha sido enviado a cocina
+        if not pedido.get('en_cocina', False):
+            print("\n⚠️ Este pedido aún no ha sido enviado a cocina por el cliente.")
             input("\nPresione Enter para volver...")
             return
         
         # Determinar opciones disponibles según el estado actual
-        if pedido.get('estado_cocina') == '👨‍🍳 EN PREPARACIÓN':
+        if pedido.get('estado_cocina') == self.estados_pedido['en_preparacion']:
             print("\n1. Marcar como LISTO PARA ENTREGAR")
+            print("2. Cancelar pedido")
             print("0. Volver")
             
             opcion = input("\nSeleccione una opción: ")
             if opcion == "1":
                 self._actualizar_estado_pedido(mesa_id, pedido, 'listo')
                 print("\n✅ Pedido marcado como LISTO PARA ENTREGAR")
+            elif opcion == "2":
+                print("\n⚠️ ¿Está seguro que desea cancelar este pedido?")
+                print("1. Sí, cancelar")
+                print("2. No, volver")
+                confirmacion = input("\nSeleccione una opción: ")
+                if confirmacion == "1":
+                    self._actualizar_estado_pedido(mesa_id, pedido, 'cancelado')
+                    print("\n✅ Pedido cancelado")
+                else:
+                    print("\n❌ Cancelación abortada")
             elif opcion == "0":
                 return
             else:
                 print("Opción inválida")
-        else:  # Pedido nuevo
+        else:  # Pedido pendiente
             print("\n1. Marcar como EN PREPARACIÓN")
+            print("2. Cancelar pedido")
             print("0. Volver")
             
             opcion = input("\nSeleccione una opción: ")
             if opcion == "1":
                 self._actualizar_estado_pedido(mesa_id, pedido, 'en_preparacion')
                 print("\n✅ Pedido marcado como EN PREPARACIÓN")
+            elif opcion == "2":
+                print("\n⚠️ ¿Está seguro que desea cancelar este pedido?")
+                print("1. Sí, cancelar")
+                print("2. No, volver")
+                confirmacion = input("\nSeleccione una opción: ")
+                if confirmacion == "1":
+                    self._actualizar_estado_pedido(mesa_id, pedido, 'cancelado')
+                    print("\n✅ Pedido cancelado")
+                else:
+                    print("\n❌ Cancelación abortada")
             elif opcion == "0":
                 return
             else:
@@ -454,7 +504,7 @@ class SistemaPedidosCocina:
             cliente_key = f"cliente_{i}"
             if mesa[cliente_key]['nombre'] == pedido['cliente']:
                 for p in mesa[cliente_key]['pedidos']:
-                    if p['id'] == pedido['id']:
+                    if p['id'] == pedido['id']:  # Usar el ID único del pedido
                         # Registrar el historial de estados si no existe
                         if 'historial_estados' not in p:
                             p['historial_estados'] = []
@@ -487,7 +537,7 @@ class SistemaPedidosCocina:
             cliente_key = f"cliente_{i}"
             if mesa[cliente_key]['nombre'] == pedido['cliente']:
                 for p in mesa[cliente_key]['pedidos']:
-                    if p['id'] == pedido['id']:
+                    if p['id'] == pedido['id']:  # Usar el ID único del pedido
                         pedido_encontrado = True
                         break
                 if pedido_encontrado:
@@ -505,10 +555,8 @@ class SistemaPedidosCocina:
             return pedido['estado_cocina']
         elif pedido.get('cancelado'):
             return self.estados_pedido['cancelado']
-        elif pedido.get('urgente'):
-            return self.estados_pedido['preparar']
         else:
-            return self.estados_pedido['normal']
+            return self.estados_pedido['pendiente']
 
     def procesar_pedidos_mesa(self, mesa_id):
         """Procesa los pedidos de una mesa específica, marcando las bebidas"""
@@ -542,10 +590,12 @@ class SistemaPedidosCocina:
                         'mesa_id': mesa_id,
                         'mesa_nombre': mesa['nombre'],
                         'hora': pedido.get('hora', 'No registrada'),
+                        'hora_envio': pedido.get('hora_envio', 'No registrada'),
                         'notas': pedido.get('notas') if 'notas' in pedido else ([{'texto': pedido['nota'], 'hora': 'antigua'}] if 'nota' in pedido else []),
                         'estado_cocina': estado_cocina,
                         'retraso_minutos': pedido.get('retraso_minutos'),
-                        'es_bebida': es_bebida
+                        'es_bebida': es_bebida,
+                        'en_cocina': pedido.get('en_cocina', False)
                     }
                     pedidos_procesados.append(pedido_procesado)
 

@@ -99,18 +99,28 @@ def interfaz_cliente(sistema, sistema_pedidos_clientes):
                     cliente = mesa_data.get(f"cliente_{i}")
                     if cliente and cliente.get('pedidos'):
                         for pedido in cliente['pedidos']:
-                            if not pedido.get('entregado', False):
+                            # Ignorar pedidos cancelados
+                            if pedido.get('estado_cocina') != '🔴 CANCELADO' and not pedido.get('entregado', False):
                                 todos_entregados = False
                                 break
                     if not todos_entregados:
                         break
 
                 if todos_entregados:
-                    if sistema_pedidos_clientes.pagar_cuenta(mesa_id):
-                        return
+                    # Encontrar el cliente activo
+                    cliente_key = None
+                    for i in range(1, mesa_data['capacidad'] + 1):
+                        if mesa_data.get(f"cliente_{i}", {}).get('nombre') == nombre_cliente:
+                            cliente_key = f"cliente_{i}"
+                            break
+                    
+                    if cliente_key:
+                        if sistema_pedidos_clientes.pagar_cuenta(mesa_id, cliente_key):
+                            return
+                    else:
+                        print("\n⚠️ Error: No se encontró el cliente en la mesa.")
                 else:
                     print("\n⚠️ No se puede pagar aún. Todos los pedidos deben estar marcados como 'entregado' en mesa.")
-                    #sistema_pedidos_clientes.mostrar_resumen_grupal(mesa_id) # Opcional: mostrar qué falta
             else:
                 print("Opción no válida")
         except ValueError:
@@ -139,16 +149,6 @@ def interfaz_empleado(sistema_pedidos_cocina, sistema_pedidos_mozos):
             print("")
 
 def interfaz_cocina(sistema_pedidos_cocina):
-    """
-    Interfaz principal para el sistema de cocina
-    
-    Args:
-        sistema_pedidos_cocina (SistemaPedidosCocina): Instancia del sistema de pedidos
-        
-    Ejemplo:
-        >>> sistema = SistemaPedidosCocina(sistema_mesas)
-        >>> interfaz_cocina(sistema)
-    """
 
     while True:
         try:
@@ -186,6 +186,7 @@ def interfaz_mozos(sistema_pedidos_mozos):
             print("1. Mapa del Restaurante")
             print("2. Marcar pedido como entregado")
             print("3. Comentarios de Mesas")
+            print("4. Reiniciar mesa")
             print("0. Volver")
 
             opcion = input("Seleccione una opción: ")
@@ -195,9 +196,38 @@ def interfaz_mozos(sistema_pedidos_mozos):
             elif opcion == "1":
                 sistema_pedidos_mozos.mostrar_mapa_mesas()
             elif opcion == "2":
-                sistema_pedidos_mozos.gestionar_entregas() # Llamar a la función correcta
+                sistema_pedidos_mozos.gestionar_entregas()
             elif opcion == "3":
-                sistema_pedidos_mozos.gestionar_comentarios() # Había un error tipográfico aquí, lo corregí a gestionar_comentarios
+                sistema_pedidos_mozos.gestionar_comentarios()
+            elif opcion == "4":
+                # Mostrar solo mesas ocupadas
+                mesas_ocupadas = [(mid, m[0]) for mid, m in sistema_pedidos_mozos.sistema_mesas.mesas.items() if m[0]['estado'] == 'ocupada']
+                if not mesas_ocupadas:
+                    print("\nNo hay mesas ocupadas para reiniciar.")
+                    continue
+                print("\n=== REINICIAR MESA ===")
+                for idx, (mid, mesa) in enumerate(mesas_ocupadas, 1):
+                    print(f"{idx}. {mesa['nombre']}")
+                print("0. Volver al menú principal")
+                seleccion = input("\nSeleccione la mesa a reiniciar (número): ")
+                if seleccion == "0":
+                    continue
+                try:
+                    seleccion = int(seleccion)
+                    if 1 <= seleccion <= len(mesas_ocupadas):
+                        mid, mesa = mesas_ocupadas[seleccion-1]
+                        print(f"\n⚠️ ¿Está seguro que desea reiniciar la {mesa['nombre']}?")
+                        print("1. Sí, reiniciar mesa")
+                        print("2. No, volver")
+                        confirm = input("\nSeleccione una opción: ")
+                        if confirm == "1":
+                            sistema_pedidos_mozos.reiniciar_mesa(mid)
+                        else:
+                            print("\nOperación cancelada.")
+                    else:
+                        print("Opción inválida.")
+                except ValueError:
+                    print("Por favor ingrese un número válido.")
             else:
                 print("Opción no válida")
         except ValueError:

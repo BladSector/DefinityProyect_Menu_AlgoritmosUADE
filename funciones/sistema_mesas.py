@@ -75,22 +75,27 @@ class SistemaMesas:
         return None, None
 
     def registrar_cliente(self, mesa_id, nombre_cliente):
-        """Registra un cliente en una mesa."""
-        mesa = self.obtener_mesa(mesa_id)
-        if not mesa:
+        """Registra un cliente en una mesa específica."""
+        if mesa_id not in self.mesas:
+            print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
             return None
 
+        mesa = self.mesas[mesa_id][0]
+        
+        # Primero buscar si el cliente ya existe en la mesa
         for i in range(1, mesa['capacidad'] + 1):
             cliente_key = f"cliente_{i}"
-            if mesa[cliente_key]['nombre'].lower() == nombre_cliente.lower():
+            if mesa[cliente_key]['nombre'] == nombre_cliente:
+                mesa['estado'] = 'ocupada'
+                self.guardar_mesas()
                 return cliente_key
 
+        # Si no existe, buscar un espacio libre
         for i in range(1, mesa['capacidad'] + 1):
             cliente_key = f"cliente_{i}"
             if not mesa[cliente_key]['nombre']:
                 mesa[cliente_key]['nombre'] = nombre_cliente
-                if mesa['estado'] == 'libre':
-                    mesa['estado'] = 'ocupada'
+                mesa['estado'] = 'ocupada'
                 self.guardar_mesas()
                 return cliente_key
         return None

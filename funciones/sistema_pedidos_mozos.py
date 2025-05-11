@@ -1,4 +1,6 @@
 from datetime import datetime
+import os
+import json
 
 class ManejadorNotificaciones:
     """Clase para gestionar todas las notificaciones del sistema"""
@@ -339,10 +341,17 @@ class SistemaPedidosMozos:
                 indice = int(opcion) - 1
                 if 0 <= indice < len(pedidos_listos):
                     pedido = pedidos_listos[indice]
-                    if self._marcar_pedido_entregado(pedido['mesa_id'], pedido['cliente'], pedido['id']):
-                        print(f"\n✅ Pedido '{pedido['nombre']}' marcado como entregado.")
+                    print(f"\n⚠️ ¿Está seguro que desea marcar como entregado el pedido '{pedido['nombre']}'?")
+                    print("1. Sí, marcar como entregado")
+                    print("2. No, volver")
+                    confirmacion = input("\nSeleccione una opción: ")
+                    if confirmacion == "1":
+                        if self._marcar_pedido_entregado(pedido['mesa_id'], pedido['cliente'], pedido['id']):
+                            print(f"\n✅ Pedido '{pedido['nombre']}' marcado como entregado.")
+                        else:
+                            print("Error al marcar el pedido como entregado.")
                     else:
-                        print("Error al marcar el pedido como entregado.")
+                        print("\n❌ Operación cancelada")
                 else:
                     print("Número de pedido inválido.")
             except ValueError:
@@ -439,6 +448,58 @@ class SistemaPedidosMozos:
                     pedidos_procesados.append(pedido_procesado)
         return pedidos_procesados
 
+    def reiniciar_mesa(self, mesa_id):
+        """Reinicia una mesa específica, registrando el evento en el historial."""
+        mesa_data = self._validar_mesa(mesa_id)
+        if not mesa_data:
+            return False
+
+        mesa = mesa_data[0]
+        
+        # Registrar en el historial
+        historial_dir = "data/historial_pagos"
+        if not os.path.exists(historial_dir):
+            os.makedirs(historial_dir)
+
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        archivo_historial = os.path.join(historial_dir, f"pagos_{fecha_actual}.json")
+        
+        registro = {
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "mesa": mesa['nombre'],
+            "total": 0,
+            "tipo": "reinicio",
+            "detalle": "Mesa reiniciada por el camarero"
+        }
+
+        try:
+            if os.path.exists(archivo_historial):
+                with open(archivo_historial, 'r', encoding='utf-8') as f:
+                    historial = json.load(f)
+            else:
+                historial = []
+
+            historial.append(registro)
+
+            with open(archivo_historial, 'w', encoding='utf-8') as f:
+                json.dump(historial, f, indent=4, ensure_ascii=False)
+
+            # Limpiar la mesa
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                if cliente_key in mesa:
+                    mesa[cliente_key] = {'nombre': '', 'pedidos': []}
+            
+            # Cambiar el estado de la mesa a 'libre'
+            mesa['estado'] = 'libre'
+            
+            self.sistema_mesas.guardar_mesas()
+            print(f"\n✅ Mesa {mesa['nombre']} reiniciada exitosamente")
+            return True
+        except Exception as e:
+            print(f"\n⚠️ Error al reiniciar la mesa: {e}")
+            return False
+
     def mostrar_menu(self):
         """Muestra el menú principal del sistema de mozos."""
         while True:
@@ -446,6 +507,7 @@ class SistemaPedidosMozos:
             print("1. Mostrar mapa de mesas")
             print("2. Gestionar comentarios pendientes")
             print("3. Gestionar entregas de pedidos")
+            print("4. Reiniciar mesa")
             print("0. Salir")
 
             opcion = input("Seleccione una opción: ")
@@ -457,6 +519,11 @@ class SistemaPedidosMozos:
                 self.gestionar_comentarios()
             elif opcion == '3':
                 self.gestionar_entregas()
+            elif opcion == '4':
+                self.mostrar_mapa_mesas()
+                mesa_id = input("\nIngrese el ID de la mesa a reiniciar (o 0 para volver): ")
+                if mesa_id != '0':
+                    self.reiniciar_mesa(mesa_id)
             elif opcion == '0':
                 print("Saliendo del sistema de mozos.")
                 break
