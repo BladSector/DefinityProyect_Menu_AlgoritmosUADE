@@ -537,7 +537,7 @@ class SistemaPedidosClientes:
     def _guardar_ticket(self, mesa_id, mesa, platos_agrupados, total, metodo_pago, es_grupal):
         """Guarda el ticket de pago en un archivo."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        archivo_ticket = os.path.join(self.historial_dir, "tickets", f"ticket_{mesa_id}_{timestamp}.txt")
+        archivo_ticket = os.path.join("data", "tickets", f"ticket_{mesa_id}_{timestamp}.txt")
         
         # Crear directorio si no existe
         os.makedirs(os.path.dirname(archivo_ticket), exist_ok=True)
