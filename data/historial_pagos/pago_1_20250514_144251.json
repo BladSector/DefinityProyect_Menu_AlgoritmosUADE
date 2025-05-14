@@ -1,0 +1,31 @@
+{
+    "fecha": "2025-05-14 14:42 hs",
+    "mesa_id": "1",
+    "cliente": "Santiago 2",
+    "pedidos": [
+        {
+            "id": "20250514144116_1",
+            "plato_id": 30,
+            "nombre": "Chocolate caliente vegano",
+            "cantidad": 1,
+            "precio": 6000,
+            "hora": "14:41 hs",
+            "en_cocina": true,
+            "hora_envio": "14:41 hs",
+            "estado_cocina": "✅ LISTO PARA ENTREGAR",
+            "historial_estados": [
+                {
+                    "estado": "👨‍🍳 EN PREPARACIÓN",
+                    "hora": "14:42 hs"
+                },
+                {
+                    "estado": "✅ LISTO PARA ENTREGAR",
+                    "hora": "14:42 hs"
+                }
+            ],
+            "entregado": true
+        }
+    ],
+    "total": 6000,
+    "metodo_pago": "Efectivo"
+}

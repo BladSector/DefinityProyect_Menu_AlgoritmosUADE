@@ -13,7 +13,26 @@
         "nombre": "",
         "pedidos": []
       },
-      "comentarios_camarero": []
+      "comentarios_camarero": [
+        {
+          "mensaje": "Necesito pan 1",
+          "hora": "13:45 hs",
+          "resuelto": true,
+          "cliente": "Santiago 1"
+        },
+        {
+          "mensaje": "Necesito pan 2",
+          "hora": "13:46 hs",
+          "resuelto": true,
+          "cliente": "Santiago 2"
+        },
+        {
+          "mensaje": "Necesito pan 3",
+          "hora": "13:49 hs",
+          "resuelto": true,
+          "cliente": "Santiago 1"
+        }
+      ]
     }
   ],
   "2": [

@@ -1,0 +1,53 @@
+{
+    "fecha": "2025-05-14 14:42 hs",
+    "mesa_id": "1",
+    "cliente": "Santiago 1",
+    "pedidos": [
+        {
+            "id": "20250514144102_1",
+            "plato_id": 28,
+            "nombre": "Café con leche de avena",
+            "cantidad": 1,
+            "precio": 4800,
+            "hora": "14:41 hs",
+            "en_cocina": true,
+            "hora_envio": "14:41 hs",
+            "estado_cocina": "✅ LISTO PARA ENTREGAR",
+            "historial_estados": [
+                {
+                    "estado": "👨‍🍳 EN PREPARACIÓN",
+                    "hora": "14:42 hs"
+                },
+                {
+                    "estado": "✅ LISTO PARA ENTREGAR",
+                    "hora": "14:42 hs"
+                }
+            ],
+            "entregado": true
+        },
+        {
+            "id": "20250514144104_2",
+            "plato_id": 28,
+            "nombre": "Café con leche de avena",
+            "cantidad": 1,
+            "precio": 4800,
+            "hora": "14:41 hs",
+            "en_cocina": true,
+            "hora_envio": "14:41 hs",
+            "estado_cocina": "✅ LISTO PARA ENTREGAR",
+            "historial_estados": [
+                {
+                    "estado": "👨‍🍳 EN PREPARACIÓN",
+                    "hora": "14:42 hs"
+                },
+                {
+                    "estado": "✅ LISTO PARA ENTREGAR",
+                    "hora": "14:42 hs"
+                }
+            ],
+            "entregado": true
+        }
+    ],
+    "total": 9600,
+    "metodo_pago": "Efectivo"
+}

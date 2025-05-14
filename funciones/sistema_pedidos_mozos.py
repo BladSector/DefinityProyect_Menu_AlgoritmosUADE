@@ -275,10 +275,19 @@ class SistemaPedidosMozos:
                 indice = int(opcion) - 1
                 if 0 <= indice < len(comentarios_pendientes):
                     comentario = comentarios_pendientes[indice]
-                    if self._marcar_comentario_realizado(comentario['mesa_id'], comentario['cliente'], comentario['texto']):
-                        print("✅ Comentario marcado como realizado.")
+                    print("\n¿Está seguro que desea marcar este comentario como realizado?")
+                    print("1. Sí, marcar como realizado")
+                    print("2. No, cancelar")
+                    confirmacion = input("\nSeleccione una opción: ")
+                    if confirmacion == "1":
+                        if self._marcar_comentario_realizado(comentario['mesa_id'], comentario['cliente'], comentario['texto']):
+                            print("✅ Comentario marcado como realizado.")
+                        else:
+                            print("⚠️ Error al marcar el comentario como realizado.")
+                    elif confirmacion == "2":
+                        print("❌ Operación cancelada.")
                     else:
-                        print("⚠️ Error al marcar el comentario como realizado.")
+                        print("⚠️ Opción inválida.")
                 else:
                     print("Número de comentario inválido.")
             except ValueError:

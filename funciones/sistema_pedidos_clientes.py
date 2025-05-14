@@ -380,11 +380,19 @@ class SistemaPedidosClientes:
         while True:
             print("\n=== AGREGAR NOTA A PEDIDO ===")
             print("\n--- TUS PEDIDOS ---")
-            for i, pedido in enumerate(cliente['pedidos'], 1):
+            pedidos_activos = [p for p in cliente['pedidos'] if not p.get('entregado', False)]
+            
+            if not pedidos_activos:
+                print("\n⚠️ No tienes pedidos activos para agregar notas")
+                input("\nPresione Enter para volver al menú anterior...")
+                return
+
+            for i, pedido in enumerate(pedidos_activos, 1):
                 nombre_pedido = pedido.get('nombre', 'Desconocido')
                 cantidad = pedido.get('cantidad', 1)
                 precio = pedido.get('precio', 0)
-                print(f"{i}. {nombre_pedido} - {cantidad}x (${precio * cantidad})")
+                estado = pedido.get('estado_cocina', '🟡 Pendiente')
+                print(f"{i}. {nombre_pedido} - {cantidad}x (${precio * cantidad}) [{estado}]")
 
                 if 'notas' in pedido and pedido['notas']:
                     print("  Historial de notas:")
@@ -402,8 +410,8 @@ class SistemaPedidosClientes:
 
             try:
                 opcion = int(opcion)
-                if 1 <= opcion <= len(cliente['pedidos']):
-                    pedido = cliente['pedidos'][opcion - 1]
+                if 1 <= opcion <= len(pedidos_activos):
+                    pedido = pedidos_activos[opcion - 1]
 
                     if 'nota' in pedido and pedido['nota']:
                         if 'notas' not in pedido:
@@ -526,6 +534,71 @@ class SistemaPedidosClientes:
         with open(archivo_historial, 'w', encoding='utf-8') as f:
             json.dump(historial, f, ensure_ascii=False, indent=4)
 
+    def _guardar_ticket(self, mesa_id, mesa, platos_agrupados, total, metodo_pago, es_grupal):
+        """Guarda el ticket de pago en un archivo."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archivo_ticket = os.path.join(self.historial_dir, "tickets", f"ticket_{mesa_id}_{timestamp}.txt")
+        
+        # Crear directorio si no existe
+        os.makedirs(os.path.dirname(archivo_ticket), exist_ok=True)
+        
+        with open(archivo_ticket, 'w', encoding='utf-8') as f:
+            f.write("=" * 40 + "\n")
+            f.write("           TICKET DE PAGO\n")
+            f.write("=" * 40 + "\n\n")
+            
+            # Información de la mesa
+            f.write(f"Mesa: {mesa['nombre']}\n")
+            f.write(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+            f.write("-" * 40 + "\n\n")
+            
+            # Información de los clientes
+            f.write("Clientes:\n")
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                cliente = mesa.get(cliente_key)
+                if cliente and cliente.get('nombre'):
+                    f.write(f"- {cliente['nombre']}\n")
+            f.write("\n")
+            
+            # Detalle de pedidos
+            f.write("DETALLE DE PEDIDOS:\n")
+            f.write("-" * 40 + "\n")
+            for nombre, datos in platos_agrupados.items():
+                if datos['cantidad'] > 1:
+                    f.write(f"{datos['cantidad']}x {nombre}\n")
+                    f.write(f"   Precio unitario: ${datos['precio_unitario']}\n")
+                    f.write(f"   Subtotal: ${datos['subtotal']}\n")
+                else:
+                    f.write(f"1x {nombre} - ${datos['precio_unitario']}\n")
+                f.write("\n")
+            
+            f.write("-" * 40 + "\n")
+            f.write(f"TOTAL A PAGAR: ${total}\n")
+            f.write(f"Método de pago: {metodo_pago}\n")
+            f.write("=" * 40 + "\n")
+            f.write("¡Gracias por su visita!\n")
+            f.write("=" * 40 + "\n")
+
+    def _verificar_todos_pagaron(self, mesa):
+        """Verifica si todos los clientes han pagado sus pedidos."""
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre') and cliente.get('pedidos'):
+                return False
+        return True
+
+    def _contar_clientes_activos(self, mesa):
+        """Cuenta cuántos clientes activos hay en la mesa."""
+        contador = 0
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                contador += 1
+        return contador
+
     def pagar_cuenta(self, mesa_id, cliente_key):
         """Permite al cliente pagar su cuenta."""
         mesa = self._obtener_mesa(mesa_id)
@@ -553,21 +626,106 @@ class SistemaPedidosClientes:
             print("\n⚠️ No se puede pagar aún. Todos los pedidos deben estar marcados como 'entregado' en mesa.")
             return False
 
-        # Calcular el total (solo con pedidos no cancelados)
-        total = 0
-        print("\n=== DETALLE DE LA CUENTA ===")
-        for pedido in pedidos_activos:
-            precio = pedido.get('precio', 0)
-            cantidad = pedido.get('cantidad', 1)
-            subtotal = precio * cantidad
-            total += subtotal
-            print(f"{cantidad}x {pedido['nombre']} - ${subtotal}")
+        # Verificar si hay más de un cliente en la mesa
+        num_clientes = self._contar_clientes_activos(mesa)
+        tipo_pago = "1"  # Por defecto, pago individual
 
-        if total == 0:
-            print("\n⚠️ No hay pedidos activos para pagar.")
-            return False
+        if num_clientes > 1:
+            # Preguntar si es pago grupal o individual
+            print("\n¿Cómo desea realizar el pago?")
+            print("1. Pago individual")
+            print("2. Pago grupal")
+            print("0. Volver")
+            
+            tipo_pago = input("\nSeleccione el tipo de pago: ")
+            
+            if tipo_pago == "0":
+                return False
+            elif tipo_pago not in ["1", "2"]:
+                print("\n⚠️ Opción inválida")
+                return False
 
-        print(f"\n💵 TOTAL A PAGAR: ${total}")
+        # Si es pago grupal, mostrar el resumen de todos los clientes
+        if tipo_pago == "2":
+            print("\n=== RESUMEN GRUPAL ===")
+            
+            # Agrupar platos repetidos y calcular totales para pago grupal
+            platos_agrupados = {}
+            total = 0
+            
+            # Recolectar todos los pedidos de todos los clientes
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                cliente_actual = mesa.get(cliente_key)
+                if cliente_actual and cliente_actual.get('nombre'):
+                    for pedido in cliente_actual.get('pedidos', []):
+                        if pedido.get('estado_cocina') not in ['🔴 CANCELADO']:
+                            nombre = pedido.get('nombre', 'Desconocido')
+                            precio = pedido.get('precio', 0)
+                            cantidad = pedido.get('cantidad', 1)
+                            
+                            if nombre not in platos_agrupados:
+                                platos_agrupados[nombre] = {
+                                    'cantidad': 0,
+                                    'precio_unitario': precio,
+                                    'subtotal': 0
+                                }
+                            
+                            platos_agrupados[nombre]['cantidad'] += cantidad
+                            platos_agrupados[nombre]['subtotal'] += precio * cantidad
+                            total += precio * cantidad
+
+            # Mostrar el detalle de la cuenta grupal
+            print("\n=== DETALLE DE LA CUENTA GRUPAL ===")
+            for nombre, datos in platos_agrupados.items():
+                if datos['cantidad'] > 1:
+                    print(f"{datos['cantidad']}x {nombre}")
+                    print(f"   Precio unitario: ${datos['precio_unitario']}")
+                    print(f"   Subtotal: ${datos['subtotal']}")
+                else:
+                    print(f"1x {nombre} - ${datos['precio_unitario']}")
+                print()
+
+            print(f"\n💵 TOTAL A PAGAR: ${total}")
+            
+            print("\n¿Desea continuar con el pago grupal?")
+            print("1. Sí, continuar")
+            print("2. No, volver")
+            confirmacion = input("\nSeleccione una opción: ")
+            if confirmacion != "1":
+                return False
+        else:
+            # Agrupar platos repetidos y calcular totales para pago individual
+            platos_agrupados = {}
+            total = 0
+            for pedido in pedidos_activos:
+                nombre = pedido.get('nombre', 'Desconocido')
+                precio = pedido.get('precio', 0)
+                cantidad = pedido.get('cantidad', 1)
+                
+                if nombre not in platos_agrupados:
+                    platos_agrupados[nombre] = {
+                        'cantidad': 0,
+                        'precio_unitario': precio,
+                        'subtotal': 0
+                    }
+                
+                platos_agrupados[nombre]['cantidad'] += cantidad
+                platos_agrupados[nombre]['subtotal'] += precio * cantidad
+                total += precio * cantidad
+
+            # Mostrar el detalle de la cuenta individual
+            print("\n=== DETALLE DE LA CUENTA INDIVIDUAL ===")
+            for nombre, datos in platos_agrupados.items():
+                if datos['cantidad'] > 1:
+                    print(f"{datos['cantidad']}x {nombre}")
+                    print(f"   Precio unitario: ${datos['precio_unitario']}")
+                    print(f"   Subtotal: ${datos['subtotal']}")
+                else:
+                    print(f"1x {nombre} - ${datos['precio_unitario']}")
+                print()
+
+            print(f"\n💵 TOTAL A PAGAR: ${total}")
 
         # Simular proceso de pago
         print("\n1. Pagar con efectivo")
@@ -579,17 +737,25 @@ class SistemaPedidosClientes:
             metodo_pago = "Efectivo" if opcion == "1" else "Tarjeta"
             print("\n✅ Pago procesado exitosamente")
             
-            # Guardar historial del pago
+            # Guardar historial del pago y crear ticket
             self._guardar_historial_pago(mesa_id, cliente, total, metodo_pago)
+            self._guardar_ticket(mesa_id, mesa, platos_agrupados, total, metodo_pago, tipo_pago == "2")
             
-            # Limpiar pedidos de la mesa y marcar como libre
-            mesa['estado'] = 'libre'  
-            for i in range(1, mesa.get('capacidad', 0) + 1):
-                cliente_key = f"cliente_{i}"
-                if cliente_key in mesa:
-                    mesa[cliente_key] = {'nombre': '', 'pedidos': []}
+            # Limpiar solo los pedidos del cliente actual
+            cliente['pedidos'] = []
+            
+            # Si es pago grupal o todos los clientes han pagado, limpiar la mesa
+            if tipo_pago == "2" or self._verificar_todos_pagaron(mesa):
+                mesa['estado'] = 'libre'
+                for i in range(1, mesa.get('capacidad', 0) + 1):
+                    cliente_key = f"cliente_{i}"
+                    if cliente_key in mesa:
+                        mesa[cliente_key] = {'nombre': '', 'pedidos': []}
+                print("\n👋 ¡Gracias por su visita! La mesa ha sido liberada.")
+            else:
+                print("\n👋 ¡Gracias por su pago! La mesa permanecerá ocupada hasta que todos los clientes paguen.")
+            
             self._guardar_cambios()
-            print("\n👋 ¡Gracias por su visita!")
             return True
         elif opcion == "0":
             return False
