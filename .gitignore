@@ -1,0 +1,22 @@
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Directorios de caché de Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Directorio de tickets
+data/tickets/
+data/historial_pagos
+
+# Archivos de entorno virtual
+venv/
+env/
+.env
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db 

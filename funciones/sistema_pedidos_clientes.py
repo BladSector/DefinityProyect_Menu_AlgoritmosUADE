@@ -1,7 +1,9 @@
 from datetime import datetime
 import os
 import json
-from sistema_pedidos_cocina import SistemaPedidosCocina
+from .sistema_mesas import SistemaMesas
+from .sistema_pedidos_cocina import SistemaPedidosCocina
+from .sistema_pedidos_mozos import SistemaPedidosMozos
 
 HISTORIAL_DIR = os.path.join("data", "historial_pagos")
 
@@ -27,11 +29,12 @@ class SistemaPedidosClientes:
 
     def hacer_pedido(self, mesa_id, cliente_key):
         """Gestiona el proceso de pedido con el menú completo integrado."""
-        mesa = self._obtener_mesa(mesa_id)
-        if not mesa:
+        mesa_data = self._obtener_mesa(mesa_id)
+        if not mesa_data:
             print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
             return
 
+        mesa = mesa_data[0]  # Accedemos al primer elemento del array
         cliente = mesa.get(cliente_key)
         if not cliente:
             print(f"\n⚠️ Error: Cliente {cliente_key} no encontrado en la mesa {mesa_id}.")
@@ -47,7 +50,7 @@ class SistemaPedidosClientes:
 
         while True:
             print("\n--- HACER PEDIDO ---")
-            print("1. Ver menú completo y seleccionar")
+            print("1. Ver menú completo")
             print("2. Filtrar por categoría")
             print("3. Filtrar por dieta")
             print("4. Cancelar pedido")
@@ -202,7 +205,13 @@ class SistemaPedidosClientes:
         hay_pendientes = False
         clientes_pendientes = {}
         
-        for i in range(1, mesa.get('capacidad', 0) + 1):
+        # Obtener la capacidad de la mesa
+        capacidad = mesa.get('capacidad', 0)
+        if not capacidad:
+            print("⚠️ Error: No se pudo obtener la capacidad de la mesa")
+            return
+        
+        for i in range(1, capacidad + 1):
             cliente_key = f"cliente_{i}"
             cliente = mesa.get(cliente_key)
             if cliente and cliente.get('nombre'):
@@ -316,49 +325,136 @@ class SistemaPedidosClientes:
             print(f"\n💵 TOTAL ACUMULADO: ${total}")
 
     def mostrar_resumen_grupal(self, mesa_id):
-        """Muestra el resumen grupal con estados actualizados."""
-        mesa = self._obtener_mesa(mesa_id)
-        if not mesa:
-            print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
+        """Muestra un resumen de todos los pedidos de la mesa"""
+        mesa_data = self.sistema_mesas.obtener_mesa(mesa_id)
+        if not mesa_data:
+            print("❌ Mesa no encontrada")
             return
 
-        if 'capacidad' not in mesa:
-            print(f"\n⚠️ Error: Información de capacidad no encontrada para la mesa {mesa_id}.")
+        mesa = mesa_data[0]  # Accedemos al primer elemento del array
+
+        # Verificar que la mesa tenga capacidad
+        if not mesa.get('capacidad'):
+            print("⚠️ Error: Información de capacidad no encontrada para la mesa")
             return
 
-        print("\n=== RESUMEN GRUPAL ===")
-        self._mostrar_pedidos_mesa(mesa, mostrar_total=True)
+        print(f"\n📋 RESUMEN DE PEDIDOS - MESA {mesa_id}")
+        print("=" * 50)
+        
+        # Mostrar pedidos de cada cliente
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                print(f"\n👤 {cliente['nombre']}:")
+                total_cliente = 0
+                
+                # Pedidos pendientes
+                pedidos_pendientes = [p for p in cliente.get('pedidos', []) 
+                                    if not p.get('en_cocina', False)]
+                if pedidos_pendientes:
+                    print("  📝 Pendientes de enviar:")
+                    for pedido in pedidos_pendientes:
+                        subtotal = pedido.get('precio', 0) * pedido.get('cantidad', 1)
+                        total_cliente += subtotal
+                        print(f"    • {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} - ${subtotal}")
+                        if 'notas' in pedido and pedido['notas']:
+                            print("      📌 Notas:")
+                            for nota in pedido['notas']:
+                                print(f"        - {nota['texto']} ({nota.get('hora', '')})")
+                
+                # Pedidos en cocina
+                pedidos_cocina = [p for p in cliente.get('pedidos', []) 
+                                if p.get('en_cocina', False) and not p.get('entregado', False)]
+                if pedidos_cocina:
+                    print("  🔥 En cocina:")
+                    for pedido in pedidos_cocina:
+                        subtotal = pedido.get('precio', 0) * pedido.get('cantidad', 1)
+                        total_cliente += subtotal
+                        estado = pedido.get('estado_cocina', "🟢 En cocina")
+                        retraso = f" (⏳ Retraso: {pedido.get('retraso_minutos')} min)" if pedido.get('retraso_minutos') else ""
+                        print(f"    • {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} {estado}{retraso} - ${subtotal}")
+                        if 'notas' in pedido and pedido['notas']:
+                            print("      📌 Notas:")
+                            for nota in pedido['notas']:
+                                print(f"        - {nota['texto']} ({nota.get('hora', '')})")
+                
+                # Pedidos entregados
+                pedidos_entregados = [p for p in cliente.get('pedidos', []) 
+                                    if p.get('entregado', False)]
+                if pedidos_entregados:
+                    print("  ✅ Entregados:")
+                    for pedido in pedidos_entregados:
+                        subtotal = pedido.get('precio', 0) * pedido.get('cantidad', 1)
+                        total_cliente += subtotal
+                        print(f"    • {pedido.get('cantidad', 1)}x {pedido.get('nombre', 'Desconocido')} - ${subtotal}")
+                        if 'notas' in pedido and pedido['notas']:
+                            print("      📌 Notas:")
+                            for nota in pedido['notas']:
+                                print(f"        - {nota['texto']} ({nota.get('hora', '')})")
+                
+                print(f"  💰 Subtotal: ${total_cliente}")
+        
+        # Mostrar total general
+        total_general = sum(
+            p.get('precio', 0) * p.get('cantidad', 1)
+            for i in range(1, mesa.get('capacidad', 0) + 1)
+            for cliente in [mesa.get(f"cliente_{i}")] if cliente and cliente.get('nombre')
+            for p in cliente.get('pedidos', [])
+            if p.get('estado_cocina') not in ['🔴 CANCELADO']
+        )
+        print(f"\n💵 TOTAL GENERAL: ${total_general}")
+        
+        # Mostrar solicitudes al camarero pendientes
+        if 'comentarios_camarero' in mesa:
+            solicitudes_pendientes = [c for c in mesa['comentarios_camarero'] 
+                                    if not c.get('resuelto', False)]
+            if solicitudes_pendientes:
+                print("\n📢 SOLICITUDES PENDIENTES AL CAMARERO:")
+                for solicitud in solicitudes_pendientes:
+                    cliente = solicitud.get('cliente', 'Cliente')
+                    print(f"  👤 {cliente}: {solicitud.get('mensaje', '')}")
 
     def confirmar_envio_cocina(self, mesa_id):
         """Confirma el envío del pedido a cocina si hay pedidos nuevos."""
-        mesa = self._obtener_mesa(mesa_id)
-        if not mesa:
+        mesa_data = self._obtener_mesa(mesa_id)
+        if not mesa_data:
             print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
             return
 
+        mesa = mesa_data[0]  # Accedemos al primer elemento del array
         pedidos_enviados = []
         tiene_pedidos_nuevos = False
+
+        # Preservar los comentarios existentes
+        comentarios_existentes = mesa.get('comentarios_camarero', [])
 
         # Crear instancia temporal de SistemaPedidosCocina para acceder a los estados
         sistema_cocina = SistemaPedidosCocina(self.sistema_mesas)
 
+        # Verificar si hay pedidos pendientes
+        pedidos_pendientes = []
         for i in range(1, mesa.get('capacidad', 0) + 1):
             cliente_key = f"cliente_{i}"
             cliente = mesa.get(cliente_key)
             if cliente and cliente.get('nombre'):
                 for pedido in cliente.get('pedidos', []):
                     if not pedido.get('en_cocina', False):
-                        tiene_pedidos_nuevos = True
-                        pedido['en_cocina'] = True
-                        pedido['hora_envio'] = datetime.now().strftime("%H:%M hs")
-                        # Establecer estado inicial del pedido usando el valor correcto
-                        pedido['estado_cocina'] = sistema_cocina.estados_pedido['pendiente']
-                        
-                        pedidos_enviados.append(f"{pedido.get('cantidad', 1)} x {pedido.get('nombre', 'Desconocido')} ({cliente['nombre']})")
+                        pedidos_pendientes.append((cliente['nombre'], pedido))
 
-        if not tiene_pedidos_nuevos:
+        if not pedidos_pendientes:
             print("\n⚠️ No hay nuevos pedidos para enviar a cocina")
             return
+
+        # Procesar los pedidos pendientes
+        for cliente_nombre, pedido in pedidos_pendientes:
+            pedido['en_cocina'] = True
+            pedido['hora_envio'] = datetime.now().strftime("%H:%M hs")
+            pedido['estado_cocina'] = sistema_cocina.estados_pedido['pendiente']
+            pedidos_enviados.append(f"{pedido.get('cantidad', 1)} x {pedido.get('nombre', 'Desconocido')} ({cliente_nombre})")
+
+        # Restaurar los comentarios después de procesar los pedidos
+        mesa['comentarios_camarero'] = comentarios_existentes
 
         self._guardar_cambios()
         print("\n🚀 Pedido enviado a cocina con éxito:")
@@ -367,11 +463,12 @@ class SistemaPedidosClientes:
 
     def agregar_nota_pedido(self, mesa_id, cliente_key):
         """Agrega o acumula notas a un pedido seleccionado."""
-        mesa = self._obtener_mesa(mesa_id)
-        if not mesa:
+        mesa_data = self._obtener_mesa(mesa_id)
+        if not mesa_data:
             print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
             return
 
+        mesa = mesa_data[0]  # Accedemos al primer elemento del array
         cliente = mesa.get(cliente_key)
         if not cliente or not cliente.get('pedidos'):
             print("\n⚠️ No tienes pedidos registrados")
@@ -477,11 +574,12 @@ class SistemaPedidosClientes:
 
     def llamar_camarero(self, mesa_id, cliente_key):
         """Registra solicitud de camarero con validación."""
-        mesa = self._obtener_mesa(mesa_id)
-        if not mesa:
+        mesa_data = self._obtener_mesa(mesa_id)
+        if not mesa_data:
             print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
             return False
 
+        mesa = mesa_data[0]  # Accedemos al primer elemento del array
         cliente = mesa.get(cliente_key)
         if not cliente or not cliente.get('nombre'):
             print(f"\n⚠️ Error: Cliente {cliente_key} no encontrado o sin nombre en la mesa {mesa_id}.")

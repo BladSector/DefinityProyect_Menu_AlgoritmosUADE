@@ -1,0 +1,830 @@
+{% extends "base.html" %}
+
+{% block title %}Vista Clientes - Sistema de Restaurante{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>Acceso Cliente</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="qrUrl" class="form-label">URL del QR</label>
+                    <input type="text" class="form-control" id="qrUrl" placeholder="Ingrese URL del QR escaneado">
+                </div>
+                <div class="mb-3">
+                    <label for="nombreCliente" class="form-label">Nombre</label>
+                    <input type="text" class="form-control" id="nombreCliente" placeholder="Ingrese su nombre">
+                </div>
+                <button class="btn btn-primary" onclick="accederMesa()">Acceder a Mesa</button>
+            </div>
+        </div>
+
+        <div class="card mt-4" id="menuCliente" style="display: none;">
+            <div class="card-header">
+                <h4>Menú Cliente: <span id="nombreClienteActual"></span></h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action" onclick="verMenu()">
+                        1. Ver menú: Hacer y o Cancelar pedido 
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="verResumenGrupal()">
+                        2. Ver resumen grupal
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="confirmarEnvioCocina()">
+                        3. Confirmar y enviar pedido a cocina
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="agregarNotaPedido()">
+                        4. Agregar nota a pedido
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="llamarCamarero()">
+                        5. Llamar al camarero
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="pagarCuenta()">
+                        6. Pagar cuenta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div id="contenidoDinamico">
+            <!-- Aquí se mostrará el contenido según la opción seleccionada -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal para opciones de menú -->
+<div class="modal fade" id="menuOptionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Menú Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action" onclick="verMenuCompleto()">
+                        1. Ver menú completo y seleccionar
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="filtrarPorCategoria()">
+                        2. Filtrar por categoría
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="filtrarPorDieta()">
+                        3. Filtrar por dieta
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="cancelarPedidoPendiente()">
+                        4. Cancelar pedido
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para confirmar cancelación -->
+<div class="modal fade" id="confirmarCancelacionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Cancelación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea cancelar este pedido?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, volver</button>
+                <button type="button" class="btn btn-danger" id="confirmarCancelacionBtn">Sí, cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let mesaActual = null;
+let clienteActual = null;
+let menuOptionsModal = null;
+let confirmarCancelacionModal = null;
+let pedidoIdACancelar = null;
+let intervaloActualizacion = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    menuOptionsModal = new bootstrap.Modal(document.getElementById('menuOptionsModal'));
+    confirmarCancelacionModal = new bootstrap.Modal(document.getElementById('confirmarCancelacionModal'));
+    
+    document.getElementById('confirmarCancelacionBtn').addEventListener('click', function() {
+        if (pedidoIdACancelar) {
+            realizarCancelacion(pedidoIdACancelar);
+            confirmarCancelacionModal.hide();
+        }
+    });
+
+    // Actualización automática cada 3 segundos
+    setInterval(() => {
+        const contenido = document.getElementById('contenidoDinamico');
+        if (contenido.innerHTML.includes('Resumen Grupal')) {
+            verResumenGrupal();
+        } else if (contenido.innerHTML.includes('Menú Completo')) {
+            verMenuCompleto();
+        } else if (contenido.innerHTML.includes('Pedidos Pendientes')) {
+            cancelarPedidoPendiente();
+        }
+    }, 3000);
+});
+
+function accederMesa() {
+    const qrUrl = document.getElementById('qrUrl').value;
+    const nombre = document.getElementById('nombreCliente').value;
+
+    if (!qrUrl || !nombre) {
+        mostrarMensaje('Por favor complete todos los campos', 'warning');
+        return;
+    }
+
+    fetch('/api/mesas/acceder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            qr_url: qrUrl,
+            nombre: nombre
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mesaActual = data.mesa_id;
+            clienteActual = data.cliente_key;
+            document.getElementById('nombreClienteActual').textContent = nombre;
+            document.getElementById('menuCliente').style.display = 'block';
+            verMenu();
+        } else {
+            mostrarMensaje(data.error || 'Error al acceder a la mesa', 'danger');
+        }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al acceder a la mesa: ' + error.message, 'danger');
+    });
+}
+
+function verMenu() {
+    const contenido = document.getElementById('contenidoDinamico');
+    contenido.innerHTML = `
+        <div class="card">
+            <div class="card-header">
+                <h4>Menú de Opciones</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <button class="list-group-item list-group-item-action" onclick="verMenuCompleto()">
+                        1. Ver menú completo
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="filtrarPorCategoria()">
+                        2. Filtrar por categoría
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="filtrarPorDieta()">
+                        3. Filtrar por dieta
+                    </button>
+                    <button class="list-group-item list-group-item-action" onclick="cancelarPedidoPendiente()">
+                        4. Cancelar pedido
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function verMenuCompleto() {
+    fetch('/api/menu')
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Menú Completo</h4>
+                        <button class="btn btn-outline-secondary" onclick="verMenu()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            ${data.data.map((plato) => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${plato.plato.nombre}</h5>
+                                            <p class="card-text">${plato.plato.descripcion || ''}</p>
+                                            <p class="card-text">
+                                                <strong>Ingredientes:</strong><br>
+                                                ${plato.plato.ingredientes ? plato.plato.ingredientes.map(ing => `• ${ing}`).join('<br>') : 'No especificados'}
+                                            </p>
+                                            <p class="card-text"><strong>Precio: $${plato.plato.precio}</strong></p>
+                                            ${plato.plato.dietas ? `<p class="card-text"><small class="text-muted">🏷️ ${plato.plato.dietas.join(', ')}</small></p>` : ''}
+                                            <button class="btn btn-primary" onclick="hacerPedido('${plato.index}')">Pedir</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function filtrarPorCategoria() {
+    fetch('/api/menu/categorias')
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Filtrar por Categoría</h4>
+                        <button class="btn btn-outline-secondary" onclick="verMenu()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            ${data.data.map(categoria => `
+                                <button class="list-group-item list-group-item-action" onclick="mostrarPlatosCategoria('${categoria}')">
+                                    ${categoria}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function mostrarPlatosCategoria(categoria) {
+    const categoriaCodificada = encodeURIComponent(categoria);
+    console.log(`Buscando platos para categoría: '${categoria}' (codificada: '${categoriaCodificada}')`);
+    
+    fetch(`/api/menu/categorias/${categoriaCodificada}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || 'Error al obtener los platos');
+            }
+            
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Platos - ${categoria}</h4>
+                        <button class="btn btn-outline-secondary" onclick="filtrarPorCategoria()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            ${data.data.map(plato => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${plato.nombre}</h5>
+                                            <p class="card-text">${plato.descripcion || ''}</p>
+                                            <p class="card-text">
+                                                <strong>Ingredientes:</strong><br>
+                                                ${plato.ingredientes ? plato.ingredientes.map(ing => `• ${ing}`).join('<br>') : 'No especificados'}
+                                            </p>
+                                            <p class="card-text"><strong>Precio: $${plato.precio}</strong></p>
+                                            ${plato.dietas ? `<p class="card-text"><small class="text-muted">🏷️ ${plato.dietas.join(', ')}</small></p>` : ''}
+                                            <button class="btn btn-primary" onclick="hacerPedido('${plato.id}')">Pedir</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Error al cargar los platos</h4>
+                    <p>${error.message}</p>
+                    <hr>
+                    <button class="btn btn-outline-secondary" onclick="filtrarPorCategoria()">
+                        <i class="fas fa-arrow-left"></i> Volver
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function filtrarPorDieta() {
+    fetch('/api/menu/dietas')
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Filtrar por Dieta</h4>
+                        <button class="btn btn-outline-secondary" onclick="verMenu()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            ${data.data.map(dieta => `
+                                <button class="list-group-item list-group-item-action" onclick="mostrarPlatosDieta('${dieta}')">
+                                    ${dieta}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function mostrarPlatosDieta(dieta) {
+    fetch(`/api/menu/dietas/${dieta}`)
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Platos - ${dieta}</h4>
+                        <button class="btn btn-outline-secondary" onclick="filtrarPorDieta()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            ${data.data.map(plato => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">${plato.nombre}</h5>
+                                            <p class="card-text">${plato.descripcion || ''}</p>
+                                            <p class="card-text">
+                                                <strong>Ingredientes:</strong><br>
+                                                ${plato.ingredientes ? plato.ingredientes.map(ing => `• ${ing}`).join('<br>') : 'No especificados'}
+                                            </p>
+                                            <p class="card-text"><strong>Precio: $${plato.precio}</strong></p>
+                                            <p class="card-text"><small class="text-muted">🏷️ ${plato.dietas.join(', ')}</small></p>
+                                            <button class="btn btn-primary" onclick="hacerPedido('${plato.id}')">Pedir</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function cancelarPedidoPendiente() {
+    fetch(`/api/mesas/${mesaActual}/pedidos-pendientes`)
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            if (data.pedidos.length === 0) {
+                contenido.innerHTML = `
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4>Cancelar Pedido</h4>
+                            <button class="btn btn-outline-secondary" onclick="verMenu()">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                No hay pedidos pendientes para cancelar.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4>Pedidos Pendientes</h4>
+                        <button class="btn btn-outline-secondary" onclick="verMenu()">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            ${data.pedidos.map((pedido, index) => `
+                                <div class="list-group-item">
+                                    <h5 class="mb-1">${pedido.cliente}</h5>
+                                    <p class="mb-1">${pedido.cantidad}x ${pedido.nombre}</p>
+                                    ${pedido.notas ? `
+                                        <small class="text-muted">
+                                            📝 Notas:<br>
+                                            ${pedido.notas.map(nota => `• ${nota.texto} (${nota.hora})`).join('<br>')}
+                                        </small>
+                                    ` : ''}
+                                    <button class="btn btn-danger btn-sm mt-2" onclick="confirmarCancelarPedido('${pedido.id}')">
+                                        Cancelar Pedido
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function confirmarCancelarPedido(pedidoId) {
+    pedidoIdACancelar = pedidoId;
+    confirmarCancelacionModal.show();
+}
+
+function realizarCancelacion(pedidoId) {
+    fetch(`/api/pedidos/${pedidoId}/cancelar`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarMensaje('Pedido cancelado exitosamente', 'success');
+            setTimeout(() => cancelarPedidoPendiente(), 1000);
+        } else {
+            mostrarMensaje('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al cancelar el pedido: ' + error.message, 'danger');
+    });
+}
+
+function verResumenGrupal() {
+    fetch(`/api/mesas/${mesaActual}/resumen`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                        <div class="card-header">
+                        <h4>Resumen Grupal</h4>
+                    </div>
+                    <div class="card-body">
+                            ${data.resumen.map(cliente => `
+                                <div class="mb-4">
+                                    <h5>👤 ${cliente.nombre}</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                                    <th>Pedido</th>
+                                        <th>Estado</th>
+                                        <th>Notas</th>
+                                                    <th>Precio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                                ${cliente.pedidos.map(pedido => `
+                                                    <tr>
+                                                        <td>${pedido.cantidad}x ${pedido.nombre}</td>
+                                                        <td>${pedido.estado_cocina}</td>
+                                                        <td>
+                                                            ${pedido.notas ? pedido.notas.map(nota => 
+                                                                `<div>• ${nota.texto} (${nota.hora})</div>`
+                                                            ).join('') : ''}
+                                            </td>
+                                                        <td>$${pedido.precio * pedido.cantidad}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                                                    <td><strong>$${cliente.subtotal}</strong></td>
+                                        </tr>
+                                            </tfoot>
+                            </table>
+                        </div>
+                                </div>
+                            `).join('')}
+                        
+                            ${data.solicitudes_camarero.length > 0 ? `
+                            <div class="mt-4">
+                                    <h5>📢 Solicitudes al Camarero</h5>
+                                <div class="list-group">
+                                    ${data.solicitudes_camarero.map(solicitud => `
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                        <strong>👤 ${solicitud.cliente}:</strong>
+                                                    <p class="mb-0">${solicitud.mensaje}</p>
+                                                    </div>
+                                                    <small class="text-muted">${solicitud.hora}</small>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        </div>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="mt-4 text-end">
+                                <h4>Total: $${data.total}</h4>
+                            </div>
+                        </div>
+                </div>
+            `;
+            } else {
+                alert('Error al obtener el resumen: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('contenidoDinamico').innerHTML = `
+                <div class="alert alert-danger">
+                    Error al cargar el resumen: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// Agregar función para actualizar el resumen cuando el mozo marca como entregado
+function actualizarResumenGrupal() {
+    if (document.getElementById('contenidoDinamico').innerHTML.includes('Resumen Grupal')) {
+        verResumenGrupal();
+    }
+}
+
+function mostrarMensaje(mensaje, tipo) {
+    let notificacionesContainer = document.getElementById('notificaciones-container');
+    if (!notificacionesContainer) {
+        notificacionesContainer = document.createElement('div');
+        notificacionesContainer.id = 'notificaciones-container';
+        notificacionesContainer.style.position = 'fixed';
+        notificacionesContainer.style.top = '20px';
+        notificacionesContainer.style.left = '50%';
+        notificacionesContainer.style.transform = 'translateX(-50%)';
+        notificacionesContainer.style.zIndex = '9999';
+        document.body.appendChild(notificacionesContainer);
+    }
+
+    const notificacion = document.createElement('div');
+    notificacion.className = `alert alert-${tipo} fade show`;
+    notificacion.style.minWidth = '300px';
+    notificacion.style.marginBottom = '10px';
+    notificacion.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+    notificacion.style.backgroundColor = tipo === 'success' ? '#d4edda' : '#f8d7da';
+    notificacion.style.border = `1px solid ${tipo === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+    notificacion.style.borderRadius = '4px';
+    notificacion.style.padding = '15px';
+    notificacion.style.textAlign = 'center';
+
+    notificacion.innerHTML = `
+        <strong>${tipo === 'success' ? '✅' : '❌'}</strong>
+        ${mensaje}
+    `;
+
+    notificacionesContainer.appendChild(notificacion);
+
+    notificacion.offsetHeight;
+
+    setTimeout(() => {
+        notificacion.classList.remove('show');
+        setTimeout(() => notificacion.remove(), 300);
+    }, 3000);
+}
+
+function agregarNotaPedido() {
+    fetch(`/api/mesas/${mesaActual}/pedidos-pendientes`)
+        .then(response => response.json())
+        .then(data => {
+            const contenido = document.getElementById('contenidoDinamico');
+            if (data.pedidos.length === 0) {
+                contenido.innerHTML = `
+                    <div class="alert alert-warning">
+                        No hay pedidos activos para agregar notas.
+                    </div>
+                `;
+                return;
+            }
+            contenido.innerHTML = `
+                <h3>Agregar Nota a Pedido</h3>
+                <div class="list-group">
+                    ${data.pedidos.map((pedido, index) => `
+                        <div class="list-group-item">
+                            <h5 class="mb-1">${pedido.cliente}</h5>
+                            <p class="mb-1">${pedido.cantidad}x ${pedido.nombre}</p>
+                            ${pedido.notas ? `
+                                <small class="text-muted">
+                                    📝 Notas:<br>
+                                    ${pedido.notas.map(nota => `• ${nota.texto} (${nota.hora})`).join('<br>')}
+                                </small>
+                            ` : ''}
+                            <div class="mt-2">
+                                <input type="text" class="form-control mb-2" id="nota_${pedido.id}" placeholder="Ingrese la nota">
+                                <button class="btn btn-primary" onclick="guardarNota('${pedido.id}')">Agregar Nota</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        });
+}
+
+function guardarNota(pedidoId) {
+    const notaInput = document.getElementById(`nota_${pedidoId}`);
+    const notaTexto = notaInput.value.trim();
+
+    if (!notaTexto) {
+        mostrarMensaje('La nota no puede estar vacía', 'warning');
+        return;
+    }
+
+    fetch(`/api/pedidos/${pedidoId}/nota`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            nota: notaTexto
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarMensaje('Nota agregada exitosamente', 'success');
+            // Limpiar el campo de nota
+            notaInput.value = '';
+            // Actualizar la lista de pedidos después de un breve delay
+            setTimeout(() => agregarNotaPedido(), 1000);
+        } else {
+            mostrarMensaje('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al agregar la nota: ' + error.message, 'danger');
+    });
+}
+
+function hacerPedido(platoId) {
+    console.log('Haciendo pedido con ID:', platoId);
+    fetch(`/api/mesas/${mesaActual}/clientes/${clienteActual}/pedidos`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            plato_id: platoId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Datos recibidos:', data);
+        if (data.success) {
+            const mensaje = `¡Pedido confirmado! Has ordenado: ${data.data.nombre}`;
+            console.log('Mostrando mensaje:', mensaje);
+            mostrarMensaje(mensaje, 'success');
+        } else {
+            console.log('Error en la respuesta:', data.error);
+            mostrarMensaje('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error en la petición:', error);
+        mostrarMensaje('Error al realizar el pedido: ' + error.message, 'danger');
+    });
+}
+
+function llamarCamarero() {
+    const contenido = document.getElementById('contenidoDinamico');
+    contenido.innerHTML = `
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Llamar al Camarero</h4>
+                <button class="btn btn-outline-secondary" onclick="verMenu()">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="mensajeCamarero" class="form-label">Mensaje para el camarero</label>
+                    <textarea class="form-control" id="mensajeCamarero" rows="3" placeholder="Escriba su mensaje aquí..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="enviarSolicitudCamarero()">
+                    <i class="fas fa-bell"></i> Llamar al Camarero
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function enviarSolicitudCamarero() {
+    const mensaje = document.getElementById('mensajeCamarero').value.trim();
+    
+    if (!mensaje) {
+        mostrarMensaje('Por favor escriba un mensaje para el camarero', 'warning');
+        return;
+    }
+
+    fetch(`/api/mesas/${mesaActual}/llamar-camarero`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            mensaje: mensaje,
+            cliente_key: clienteActual
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Respuesta del servidor:', data); // Para debugging
+        if (data.success) {
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">✅ Solicitud Enviada</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">¡Solicitud enviada exitosamente!</h5>
+                            <p>El camarero ha sido notificado y atenderá su solicitud pronto.</p>
+                            <hr>
+                            <p class="mb-0"><strong>Mensaje enviado:</strong> "${data.data.mensaje}"</p>
+                            <p class="mb-0"><small class="text-muted">Hora: ${data.data.hora}</small></p>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary" onclick="verMenu()">
+                                <i class="fas fa-arrow-left"></i> Volver al Menú
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            mostrarMensaje('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error); // Para debugging
+        mostrarMensaje('Error al enviar la solicitud: ' + error.message, 'danger');
+    });
+}
+
+function getBadgeClass(estado) {
+    switch(estado) {
+        case '⏳ PENDIENTE':
+        case '🟡 Pendiente en cocina':
+            return 'bg-warning';
+        case '👨‍🍳 EN PREPARACIÓN':
+            return 'bg-primary';
+        case '✅ LISTO PARA ENTREGAR':
+            return 'bg-success';
+        case '🔴 CANCELADO':
+            return 'bg-danger';
+        default:
+            return 'bg-secondary';
+    }
+}
+
+function confirmarEnvioCocina() {
+    fetch(`/api/mesas/${mesaActual}/enviar-cocina`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarMensaje('Pedidos enviados a cocina exitosamente', 'success');
+            // Actualizar el resumen grupal
+            verResumenGrupal();
+            // Forzar actualización en cocina
+            fetch('/api/cocina/actualizar-vista', { method: 'POST' });
+        } else {
+            mostrarMensaje(data.error || 'Error al enviar pedidos a cocina', 'warning');
+        }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al enviar pedidos a cocina: ' + error.message, 'danger');
+    });
+}
+</script>
+{% endblock %}

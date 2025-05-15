@@ -64,8 +64,17 @@ class SistemaMesas:
 
     def obtener_mesa(self, mesa_id):
         """Obtiene la información de una mesa por su ID."""
-        mesa_data = self.mesas.get(mesa_id)
-        return mesa_data[0] if mesa_data else None
+        try:
+            # Convertir el ID a string para asegurar consistencia
+            mesa_id = str(mesa_id)
+            mesa_data = self.mesas.get(mesa_id)
+            if not mesa_data:
+                print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
+                return None
+            return mesa_data
+        except Exception as e:
+            print(f"⚠️ Error al obtener mesa {mesa_id}: {str(e)}")
+            return None
 
     def obtener_mesa_por_url(self, qr_url):
         """Busca una mesa por su URL QR."""
@@ -135,17 +144,33 @@ class SistemaMesas:
                     contador_global += 1
         return todos_platos
 
+    def _normalizar_categoria(self, categoria):
+        """Normaliza el nombre de la categoría para comparación."""
+        return categoria.lower().replace('/', ' ').strip()
+
     def filtrar_por_categoria(self):
         """Filtra platos por categoría."""
-        categorias = sorted(set(cat for etapa in self.menu['platos'].values() for cat in etapa.keys()))
-        return categorias
+        categorias = set()
+        for etapa in self.menu['platos'].values():
+            for cat in etapa.keys():
+                cat_normalizada = self._normalizar_categoria(cat)
+                print(f"Normalizando categoría del menú: '{cat}' -> '{cat_normalizada}'")
+                categorias.add(cat_normalizada)
+        return sorted(list(categorias))
 
     def obtener_platos_por_categoria(self, categoria):
         """Obtiene todos los platos de una categoría específica."""
         platos_categoria = []
+        categoria_normalizada = self._normalizar_categoria(categoria)
+        print(f"Buscando platos para categoría normalizada: '{categoria_normalizada}'")
+        
         for etapa in self.menu['platos'].values():
-            if categoria in etapa:
-                platos_categoria.extend(etapa[categoria])
+            for cat_nombre, platos in etapa.items():
+                cat_nombre_normalizado = self._normalizar_categoria(cat_nombre)
+                print(f"Comparando con categoría del menú: '{cat_nombre}' -> '{cat_nombre_normalizado}'")
+                if cat_nombre_normalizado == categoria_normalizada:
+                    platos_categoria.extend(platos)
+        
         return platos_categoria
 
     def obtener_dietas_disponibles(self):
@@ -175,3 +200,74 @@ class SistemaMesas:
     def obtener_platos_por_etapa(self, etapa):
         """Obtiene los platos de una etapa específica."""
         return self.menu['platos'].get(etapa, {})
+
+    def obtener_mesas(self):
+        """Obtiene todas las mesas disponibles."""
+        return {mesa_id: mesa_data[0] for mesa_id, mesa_data in self.mesas.items()}
+
+    def ocupar_mesa(self, mesa_id, clientes):
+        """Ocupa una mesa con los clientes especificados."""
+        if mesa_id not in self.mesas:
+            print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
+            return False
+
+        mesa = self.mesas[mesa_id][0]
+        
+        # Verificar si la mesa está libre
+        if mesa['estado'] != 'libre':
+            print(f"⚠️ Error: Mesa {mesa_id} ya está ocupada")
+            return False
+
+        # Verificar si hay suficiente capacidad
+        if len(clientes) > mesa['capacidad']:
+            print(f"⚠️ Error: La mesa {mesa_id} no tiene suficiente capacidad para {len(clientes)} clientes")
+            return False
+
+        # Registrar cada cliente
+        for i, nombre_cliente in enumerate(clientes, 1):
+            cliente_key = f"cliente_{i}"
+            mesa[cliente_key] = {
+                'nombre': nombre_cliente,
+                'pedidos': []
+            }
+
+        # Marcar la mesa como ocupada
+        mesa['estado'] = 'ocupada'
+        mesa['comentarios_camarero'] = []
+        mesa['notificaciones'] = []
+
+        # Guardar los cambios
+        return self.guardar_mesas()
+
+    def agregar_cliente_mesa(self, mesa_id, nombre_cliente):
+        """Agrega un nuevo cliente a una mesa existente si hay espacio disponible."""
+        if mesa_id not in self.mesas:
+            print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
+            return False
+
+        mesa = self.mesas[mesa_id][0]
+        
+        # Verificar si la mesa está ocupada
+        if mesa['estado'] != 'ocupada':
+            print(f"⚠️ Error: Mesa {mesa_id} no está ocupada")
+            return False
+
+        # Verificar si el cliente ya existe en la mesa
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f"cliente_{i}"
+            if mesa[cliente_key].get('nombre') == nombre_cliente:
+                print(f"⚠️ Error: El cliente {nombre_cliente} ya está en la mesa")
+                return False
+
+        # Buscar un espacio libre
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f"cliente_{i}"
+            if not mesa[cliente_key].get('nombre'):
+                mesa[cliente_key] = {
+                    'nombre': nombre_cliente,
+                    'pedidos': []
+                }
+                return self.guardar_mesas()
+
+        print(f"⚠️ Error: No hay espacio disponible en la mesa {mesa_id}")
+        return False

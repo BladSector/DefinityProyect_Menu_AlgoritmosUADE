@@ -398,7 +398,15 @@ class SistemaPedidosMozos:
             if mesa[cliente_key]['nombre'] == cliente_nombre:
                 for pedido in mesa[cliente_key]['pedidos']:
                     if pedido['id'] == pedido_id:
+                        # Verificar que el pedido esté listo para entregar
+                        if pedido.get('estado_cocina') != '✅ LISTO PARA ENTREGAR':
+                            print(f"⚠️ Error: El pedido debe estar listo para entregar antes de marcarlo como entregado")
+                            return False
+                            
+                        # Marcar como entregado
                         pedido['entregado'] = True
+                        pedido['estado_cocina'] = '✅ Entregado'
+                        
                         try:
                             self.sistema_mesas.guardar_mesas()
                             return True
