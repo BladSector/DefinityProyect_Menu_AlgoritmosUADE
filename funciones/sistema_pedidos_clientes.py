@@ -4,12 +4,23 @@ import json
 from .sistema_mesas import SistemaMesas
 from .sistema_pedidos_cocina import SistemaPedidosCocina
 from .sistema_pedidos_mozos import SistemaPedidosMozos
+from .base_visualizacion import BaseVisualizador
 
 HISTORIAL_DIR = os.path.join("data", "historial_pagos")
 
-class SistemaPedidosClientes:
+class SistemaPedidosClientes(BaseVisualizador):
+    """Sistema de gestión de pedidos para los clientes del restaurante."""
+
     def __init__(self, sistema_mesas):
-        self.sistema_mesas = sistema_mesas
+        """Inicializa el sistema con dependencias necesarias."""
+        super().__init__(sistema_mesas)
+        self.estados_pedido = {
+            'pendiente': '🟡 Pendiente',
+            'en_preparacion': '👨‍🍳 En preparación',
+            'listo': '✅ Listo para entregar',
+            'entregado': '✅ Entregado',
+            'cancelado': '🔴 Cancelado'
+        }
         self.cliente_actual = None # Para rastrear el cliente actual en pagos individuales
         self.historial_dir = HISTORIAL_DIR
         if not os.path.exists(self.historial_dir):
@@ -461,159 +472,84 @@ class SistemaPedidosClientes:
         for pedido_info in pedidos_enviados:
             print(f"  - {pedido_info}")
 
-    def agregar_nota_pedido(self, mesa_id, cliente_key):
-        """Agrega o acumula notas a un pedido seleccionado."""
-        mesa_data = self._obtener_mesa(mesa_id)
+    def mostrar_pedidos_cliente(self, mesa_id, cliente_nombre):
+        """Muestra los pedidos de un cliente específico."""
+        mesa_data = self._validar_mesa(mesa_id)
         if not mesa_data:
-            print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
-            return
+            return []
 
-        mesa = mesa_data[0]  # Accedemos al primer elemento del array
-        cliente = mesa.get(cliente_key)
-        if not cliente or not cliente.get('pedidos'):
-            print("\n⚠️ No tienes pedidos registrados")
-            return
+        mesa = mesa_data[0]
+        pedidos = []
 
-        while True:
-            print("\n=== AGREGAR NOTA A PEDIDO ===")
-            print("\n--- TUS PEDIDOS ---")
-            pedidos_activos = [p for p in cliente['pedidos'] if not p.get('entregado', False)]
-            
-            if not pedidos_activos:
-                print("\n⚠️ No tienes pedidos activos para agregar notas")
-                input("\nPresione Enter para volver al menú anterior...")
-                return
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre') == cliente_nombre:
+                for pedido in cliente.get('pedidos', []):
+                    pedido_info = {
+                        'id': pedido.get('id'),
+                        'nombre': pedido.get('nombre', 'Desconocido'),
+                        'cantidad': pedido.get('cantidad', 1),
+                        'hora': pedido.get('hora', 'No registrada'),
+                        'notas': pedido.get('notas', []),
+                        'estado_cocina': pedido.get('estado_cocina'),
+                        'entregado': pedido.get('entregado', False),
+                        'es_bebida': 'bebida' in pedido.get('nombre', '').lower()
+                    }
+                    pedidos.append(pedido_info)
+        return pedidos
 
-            for i, pedido in enumerate(pedidos_activos, 1):
-                nombre_pedido = pedido.get('nombre', 'Desconocido')
-                cantidad = pedido.get('cantidad', 1)
-                precio = pedido.get('precio', 0)
-                estado = pedido.get('estado_cocina', '🟡 Pendiente')
-                print(f"{i}. {nombre_pedido} - {cantidad}x (${precio * cantidad}) [{estado}]")
+    def agregar_nota_pedido(self, mesa_id, cliente_nombre, pedido_id, nota):
+        """Agrega una nota a un pedido específico."""
+        mesa_data = self._validar_mesa(mesa_id)
+        if not mesa_data:
+            return False
 
-                if 'notas' in pedido and pedido['notas']:
-                    print("  Historial de notas:")
-                    for idx, nota in enumerate(pedido['notas'], 1):
-                        print(f"    {idx}. {nota['texto']} ({nota['hora']})")
-                elif 'nota' in pedido:
-                    print(f"  Nota actual: {pedido['nota']} (antigua)")
-
-            print("\n0. Volver al menú anterior")
-            opcion = input("\nSeleccione el número de pedido: ").strip()
-
-            if opcion == "0":
-                print("\nVolviendo al menú anterior...")
-                return
-
-            try:
-                opcion = int(opcion)
-                if 1 <= opcion <= len(pedidos_activos):
-                    pedido = pedidos_activos[opcion - 1]
-
-                    if 'nota' in pedido and pedido['nota']:
+        mesa = mesa_data[0]
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre') == cliente_nombre:
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('id') == pedido_id:
                         if 'notas' not in pedido:
                             pedido['notas'] = []
                         pedido['notas'].append({
-                            'texto': pedido['nota'],
+                            'texto': nota,
                             'hora': datetime.now().strftime("%H:%M hs")
                         })
-                        del pedido['nota']
-                        self._guardar_cambios()
+                        try:
+                            self.sistema_mesas.guardar_mesas()
+                            return True
+                        except Exception as e:
+                            print(f"⚠️ Error al guardar mesas: {e}")
+                            return False
+        return False
 
-                    while True:
-                        print("\n--- ADMINISTRAR NOTAS ---")
-                        print(f"Pedido: {pedido.get('nombre', 'Desconocido')}")
-                        if 'notas' in pedido and pedido['notas']:
-                            print("Notas existentes:")
-                            for idx, nota in enumerate(pedido['notas'], 1):
-                                print(f"  {idx}. {nota['texto']} ({nota['hora']})")
-
-                        print("\nOpciones:")
-                        print("1. Agregar nueva nota")
-                        print("2. Eliminar nota específica")
-                        print("0. Volver a selección de pedidos")
-
-                        accion = input("\nSeleccione acción: ").strip()
-
-                        if accion == "0":
-                            break
-                        elif accion == "1":
-                            nueva_nota = input("\nIngrese la nueva nota: ").strip()
-                            if nueva_nota:
-                                if 'notas' not in pedido:
-                                    pedido['notas'] = []
-                                pedido['notas'].append({
-                                    'texto': nueva_nota,
-                                    'hora': datetime.now().strftime("%H:%M hs")
-                                })
-                                self._guardar_cambios()
-                                print("\n✅ Nota agregada al historial")
-                            else:
-                                print("\n⚠️ La nota no puede estar vacía")
-                        elif accion == "2":
-                            if 'notas' not in pedido or not pedido['notas']:
-                                print("\nℹ️ No hay notas para eliminar")
-                                continue
-
-                            try:
-                                num_nota = int(input("Ingrese número de nota a eliminar (0 para cancelar): "))
-                                if num_nota == 0:
-                                    continue
-                                if 1 <= num_nota <= len(pedido['notas']):
-                                    eliminada = pedido['notas'].pop(num_nota - 1)
-                                    self._guardar_cambios()
-                                    print(f"\n🗑️ Nota eliminada: '{eliminada['texto']}'")
-                                else:
-                                    print("\n⚠️ Número de nota inválido")
-                            except ValueError:
-                                print("\n⚠️ Entrada inválida. Intente nuevamente.")
-                else:
-                    print("\n⚠️ Número de pedido inválido")
-            except ValueError:
-                print("\n⚠️ Entrada inválida. Intente nuevamente.")
-
-    def llamar_camarero(self, mesa_id, cliente_key):
-        """Registra solicitud de camarero con validación."""
-        mesa_data = self._obtener_mesa(mesa_id)
+    def cancelar_pedido(self, mesa_id, cliente_nombre, pedido_id):
+        """Cancela un pedido específico."""
+        mesa_data = self._validar_mesa(mesa_id)
         if not mesa_data:
-            print(f"\n⚠️ Error: Mesa {mesa_id} no encontrada.")
             return False
 
-        mesa = mesa_data[0]  # Accedemos al primer elemento del array
-        cliente = mesa.get(cliente_key)
-        if not cliente or not cliente.get('nombre'):
-            print(f"\n⚠️ Error: Cliente {cliente_key} no encontrado o sin nombre en la mesa {mesa_id}.")
-            return False
-
-        while True:
-            print("\n--- LLAMAR AL CAMARERO ---")
-            print("Ingrese su solicitud (ej: 'Necesito más pan')")
-            print("o escriba '0' para volver al menú anterior")
-
-            mensaje = input("Mensaje: ").strip()
-
-            if mensaje == "0":
-                print("\nVolviendo al menú anterior...")
-                return False
-
-            if not mensaje:
-                print("\n⚠️ Error: No puede enviar una solicitud vacía.")
-                continue
-
-            comentario = {
-                "mensaje": mensaje,
-                "hora": datetime.now().strftime("%H:%M hs"),
-                "resuelto": False,
-                "cliente": cliente['nombre']
-            }
-
-            if 'comentarios_camarero' not in mesa:
-                mesa['comentarios_camarero'] = []
-            mesa['comentarios_camarero'].append(comentario)
-
-            self._guardar_cambios()
-            print("\n✅ Solicitud enviada al camarero")
-            return True
+        mesa = mesa_data[0]
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre') == cliente_nombre:
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('id') == pedido_id:
+                        if pedido.get('entregado', False):
+                            print("⚠️ No se puede cancelar un pedido ya entregado")
+                            return False
+                        pedido['estado_cocina'] = self.estados_pedido['cancelado']
+                        try:
+                            self.sistema_mesas.guardar_mesas()
+                            return True
+                        except Exception as e:
+                            print(f"⚠️ Error al guardar mesas: {e}")
+                            return False
+        return False
 
     def _guardar_historial_pago(self, mesa_id, cliente, total, metodo_pago):
         """Guarda el historial del pago en un archivo JSON."""

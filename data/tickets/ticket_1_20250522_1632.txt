@@ -1,0 +1,25 @@
+========================================
+           TICKET DE PAGO
+========================================
+
+Mesa: Mesa 1
+Fecha: 22/05/2025 16:32
+----------------------------------------
+
+Clientes:
+- Santiago 1
+
+DETALLE DE PEDIDOS:
+----------------------------------------
+1x Café con leche de avena - $4800
+
+1x Café con leche de avena - $4800
+
+1x Chocolate caliente vegano - $6000
+
+----------------------------------------
+TOTAL A PAGAR: $15600
+Método de pago: Efectivo
+========================================
+¡Gracias por su visita!
+========================================

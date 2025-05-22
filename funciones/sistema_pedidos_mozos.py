@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import json
+from .base_visualizacion import BaseVisualizador
 
 class ManejadorNotificaciones:
     """Clase para gestionar todas las notificaciones del sistema"""
@@ -33,11 +34,12 @@ class ManejadorNotificaciones:
             return None
         return self.sistema_mesas.mesas[mesa_id]
 
-class VisualizadorPedidosMozo:
+class VisualizadorPedidosMozo(BaseVisualizador):
     """Clase para manejar toda la visualización de pedidos para el mozo"""
 
     def __init__(self, sistema_mesas):
-        self.sistema_mesas = sistema_mesas
+        """Inicializa la clase con el sistema de mesas."""
+        super().__init__(sistema_mesas)
         self.estados_pedido = {
             'preparar': '🟢 PREPARAR AHORA',
             'normal': '🟡 NORMAL',
@@ -235,22 +237,320 @@ class VisualizadorPedidosMozo:
             return False
         return True
 
-class SistemaPedidosMozos:
-    """Sistema de gestión de pedidos para los mozos de un restaurante."""
+class SistemaPedidosMozos(BaseVisualizador):
+    """Sistema de gestión de pedidos para los mozos del restaurante."""
 
     def __init__(self, sistema_mesas):
         """Inicializa el sistema con dependencias necesarias."""
-        self.sistema_mesas = sistema_mesas
+        super().__init__(sistema_mesas)
         self.notificaciones = ManejadorNotificaciones(sistema_mesas)
-        self.visualizador = VisualizadorPedidosMozo(sistema_mesas)
+        self.estados_pedido = {
+            'preparar': '🟢 PREPARAR AHORA',
+            'normal': '🟡 NORMAL',
+            'cancelado': '🔴 CANCELADO',
+            'agregado': '🔵 AGREGADO',
+            'en_preparacion': '👨‍🍳 EN PREPARACIÓN',
+            'listo': '✅ LISTO PARA ENTREGAR',
+            'entregado': '🍽️ ENTREGADO'
+        }
         self.estados_comentario = {
             'pendiente': '💬 Pendiente',
             'realizado': '✅ Realizado'
         }
+        self.pagos_pendientes = []
+        self.historial_tickets = []
+        self._cargar_historial()
+
+    def _cargar_historial(self):
+        """Carga el historial de tickets desde el archivo."""
+        try:
+            if os.path.exists('data/historial_pagos/historial.json'):
+                with open('data/historial_pagos/historial.json', 'r') as f:
+                    self.historial_tickets = json.load(f)
+        except Exception as e:
+            print(f"Error al cargar historial de tickets: {str(e)}")
+            self.historial_tickets = []
+
+    def _guardar_historial(self):
+        """Guarda el historial de tickets en el archivo."""
+        try:
+            os.makedirs('data/historial_pagos', exist_ok=True)
+            with open('data/historial_pagos/historial.json', 'w') as f:
+                json.dump(self.historial_tickets, f, indent=4)
+        except Exception as e:
+            print(f"Error al guardar historial de tickets: {str(e)}")
+
+    def guardar_ticket(self, ticket):
+        """Guarda un ticket en formato texto en el directorio de tickets."""
+        try:
+            # Crear directorio si no existe
+            os.makedirs('data/tickets', exist_ok=True)
+            
+            # Generar nombre de archivo único usando timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+            mesa_id = ticket['mesa_id']
+            filename = f"ticket_{mesa_id}_{timestamp}.txt"
+            
+            # Crear el contenido del ticket
+            contenido = [
+                "=" * 40,
+                "           TICKET DE PAGO",
+                "=" * 40,
+                f"\nMesa: {ticket['mesa_nombre']}",
+                f"Fecha: {datetime.strptime(ticket['fecha'], '%Y-%m-%d %H:%M:%S').strftime('%d/%m/%Y %H:%M')}",
+                "-" * 40,
+                "\nClientes:"
+            ]
+            
+            # Agregar clientes
+            clientes = set()
+            for pedido in ticket['pedidos']:
+                clientes.add(pedido['cliente'])
+            for cliente in sorted(clientes):
+                contenido.append(f"- {cliente}")
+            
+            # Agregar detalle de pedidos
+            contenido.extend([
+                "\nDETALLE DE PEDIDOS:",
+                "-" * 40
+            ])
+            
+            # Agrupar pedidos por cliente
+            pedidos_por_cliente = {}
+            for pedido in ticket['pedidos']:
+                cliente = pedido['cliente']
+                if cliente not in pedidos_por_cliente:
+                    pedidos_por_cliente[cliente] = []
+                pedidos_por_cliente[cliente].append(pedido)
+            
+            # Agregar pedidos al ticket
+            for cliente, pedidos in pedidos_por_cliente.items():
+                for pedido in pedidos:
+                    if pedido['cantidad'] > 1:
+                        contenido.extend([
+                            f"{pedido['cantidad']}x {pedido['nombre']}",
+                            f"   Precio unitario: ${pedido['precio']}",
+                            f"   Subtotal: ${pedido['subtotal']}\n"
+                        ])
+                    else:
+                        contenido.append(f"{pedido['cantidad']}x {pedido['nombre']} - ${pedido['precio']}\n")
+            
+            # Agregar total y método de pago
+            contenido.extend([
+                "-" * 40,
+                f"TOTAL A PAGAR: ${ticket['total']}",
+                f"Método de pago: {ticket['metodo_pago'].capitalize()}",
+                "=" * 40,
+                "¡Gracias por su visita!",
+                "=" * 40
+            ])
+            
+            # Guardar el ticket
+            with open(f'data/tickets/{filename}', 'w', encoding='utf-8') as f:
+                f.write('\n'.join(contenido))
+            
+            # También agregar al historial
+            self.historial_tickets.append(ticket)
+            self._guardar_historial()
+            
+            return True
+        except Exception as e:
+            print(f"Error al guardar ticket: {str(e)}")
+            return False
+
+    def confirmar_pago(self, mesa_id, cliente, tipo_pago, metodo_pago, total):
+        """Confirma un pago y guarda el ticket."""
+        try:
+            # Buscar el pago pendiente
+            pago_confirmado = None
+            for pago in self.pagos_pendientes:
+                if pago['mesa_id'] == mesa_id and pago['cliente'] == cliente:
+                    pago_confirmado = pago
+                    break
+
+            if not pago_confirmado:
+                return False, "No se encontró el pago pendiente"
+
+            # Obtener datos de la mesa
+            mesa_data = self.sistema_mesas.obtener_mesa(mesa_id)
+            if not mesa_data:
+                return False, "Mesa no encontrada"
+
+            mesa = mesa_data[0]
+
+            # Crear el ticket
+            ticket = {
+                'mesa_id': mesa_id,
+                'mesa_nombre': mesa['nombre'],
+                'fecha': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'tipo_pago': tipo_pago,
+                'metodo_pago': metodo_pago,
+                'total': total,
+                'cliente': cliente,
+                'pedidos': []
+            }
+
+            # Agregar los pedidos al ticket
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                cliente_data = mesa.get(cliente_key)
+                if cliente_data and cliente_data.get('nombre'):
+                    # Si es pago individual, solo incluir pedidos del cliente específico
+                    if tipo_pago == 'individual' and cliente_data['nombre'] != cliente:
+                        continue
+                        
+                    for pedido in cliente_data.get('pedidos', []):
+                        if pedido.get('entregado'):
+                            ticket['pedidos'].append({
+                                'cliente': cliente_data['nombre'],
+                                'nombre': pedido['nombre'],
+                                'cantidad': pedido['cantidad'],
+                                'precio': pedido['precio'],
+                                'subtotal': pedido['precio'] * pedido['cantidad']
+                            })
+
+            # Guardar el ticket
+            if not self.guardar_ticket(ticket):
+                return False, "Error al guardar el ticket"
+
+            # Eliminar el pago de la lista de pendientes
+            self.pagos_pendientes = [
+                p for p in self.pagos_pendientes 
+                if not (p['mesa_id'] == mesa_id and p['cliente'] == cliente)
+            ]
+
+            # Limpiar la mesa según el tipo de pago
+            if tipo_pago == 'individual':
+                # Limpiar solo el cliente específico
+                for i in range(1, mesa.get('capacidad', 0) + 1):
+                    cliente_key = f"cliente_{i}"
+                    cliente_data = mesa.get(cliente_key)
+                    if cliente_data and cliente_data.get('nombre') == cliente:
+                        # Limpiar pedidos del cliente
+                        mesa[cliente_key] = {
+                            'nombre': '',
+                            'pedidos': [],
+                            'contador_pedidos': 0
+                        }
+                        break
+            else:
+                # Limpiar toda la mesa
+                mesa['estado'] = 'libre'
+                mesa['comentarios_camarero'] = []
+                mesa['notificaciones'] = []
+                
+                # Limpiar todos los clientes
+                for i in range(1, mesa.get('capacidad', 0) + 1):
+                    cliente_key = f"cliente_{i}"
+                    mesa[cliente_key] = {
+                        'nombre': '',
+                        'pedidos': [],
+                        'contador_pedidos': 0
+                    }
+
+            # Asegurar que todos los clientes tengan el contador_pedidos
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                if 'contador_pedidos' not in mesa[cliente_key]:
+                    mesa[cliente_key]['contador_pedidos'] = 0
+
+            # Guardar los cambios en las mesas
+            self.sistema_mesas.guardar_mesas()
+
+            return True, "Pago confirmado exitosamente"
+
+        except Exception as e:
+            print(f"Error al confirmar pago: {str(e)}")
+            return False, str(e)
+
+    def mostrar_pedidos_pendientes(self):
+        """Muestra los pedidos pendientes de entrega."""
+        pedidos_pendientes = []
+        
+        for mesa_id, mesa_data in self.sistema_mesas.mesas.items():
+            mesa = mesa_data[0]
+            if mesa['estado'] == 'ocupada':
+                pedidos = self.procesar_pedidos_mesa(mesa_id)
+                pedidos_pendientes.extend([p for p in pedidos if p.get('estado_cocina') == self.estados_pedido['listo']])
+        
+        return pedidos_pendientes
+
+    def marcar_pedido_entregado(self, mesa_id, pedido_id):
+        """Marca un pedido como entregado."""
+        try:
+            mesa_data = self._validar_mesa(mesa_id)
+            if not mesa_data:
+                print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
+                return False
+
+            mesa = mesa_data[0]
+            pedido_encontrado = False
+            
+            for i in range(1, mesa.get('capacidad', 0) + 1):
+                cliente_key = f"cliente_{i}"
+                cliente = mesa.get(cliente_key)
+                if cliente and cliente.get('nombre'):
+                    for pedido in cliente.get('pedidos', []):
+                        if pedido.get('id') == pedido_id:
+                            if pedido.get('entregado', False):
+                                print(f"⚠️ Error: El pedido {pedido_id} ya está marcado como entregado")
+                                return False
+                            pedido['entregado'] = True
+                            pedido['hora_entrega'] = datetime.now().strftime("%H:%M hs")
+                            pedido_encontrado = True
+                            break
+                    if pedido_encontrado:
+                        break
+            
+            if not pedido_encontrado:
+                print(f"⚠️ Error: Pedido {pedido_id} no encontrado en la mesa {mesa_id}")
+                return False
+                
+            try:
+                self.sistema_mesas.guardar_mesas()
+                return True
+            except Exception as e:
+                print(f"⚠️ Error al guardar mesas: {e}")
+                return False
+                
+        except Exception as e:
+            print(f"⚠️ Error inesperado al marcar pedido como entregado: {e}")
+            return False
+
+    def obtener_pedidos_mesa(self, mesa_id):
+        """Obtiene los pedidos de una mesa específica."""
+        mesa_data = self._validar_mesa(mesa_id)
+        if not mesa_data:
+            return []
+
+        mesa = mesa_data[0]
+        pedidos = []
+
+        for i in range(1, mesa.get('capacidad', 0) + 1):
+            cliente_key = f"cliente_{i}"
+            cliente = mesa.get(cliente_key)
+            if cliente and cliente.get('nombre'):
+                for pedido in cliente.get('pedidos', []):
+                    if pedido.get('en_cocina', False) and not pedido.get('entregado', False):
+                        pedido_info = {
+                            'id': pedido.get('id'),
+                            'nombre': pedido.get('nombre', 'Desconocido'),
+                            'cantidad': pedido.get('cantidad', 1),
+                            'cliente': cliente['nombre'],
+                            'mesa_id': mesa_id,
+                            'mesa_nombre': mesa['nombre'],
+                            'hora': pedido.get('hora', 'No registrada'),
+                            'notas': pedido.get('notas', []),
+                            'estado_cocina': pedido.get('estado_cocina'),
+                            'entregado': pedido.get('entregado', False),
+                            'es_bebida': 'bebida' in pedido.get('nombre', '').lower()
+                        }
+                        pedidos.append(pedido_info)
+        return pedidos
 
     def mostrar_mapa_mesas(self):
         """Muestra el mapa de mesas con clientes, pedidos y comentarios."""
-        self.visualizador.mostrar_mapa_mesas()
+        self.mostrar_mapa_mesas()
 
     def gestionar_comentarios(self):
         """Permite al mozo ver y marcar comentarios como realizados."""
@@ -355,7 +655,7 @@ class SistemaPedidosMozos:
                     print("2. No, volver")
                     confirmacion = input("\nSeleccione una opción: ")
                     if confirmacion == "1":
-                        if self._marcar_pedido_entregado(pedido['mesa_id'], pedido['cliente'], pedido['id']):
+                        if self.marcar_pedido_entregado(pedido['mesa_id'], pedido['id']):
                             print(f"\n✅ Pedido '{pedido['nombre']}' marcado como entregado.")
                         else:
                             print("Error al marcar el pedido como entregado.")
@@ -385,49 +685,6 @@ class SistemaPedidosMozos:
                                     'id': pedido['id']
                                 })
         return pedidos_listos
-
-    def _marcar_pedido_entregado(self, mesa_id, cliente_nombre, pedido_id):
-        """Marca un pedido específico como entregado."""
-        mesa_data = self._validar_mesa(mesa_id)
-        if not mesa_data:
-            return False
-
-        mesa = mesa_data[0]
-        for i in range(1, mesa['capacidad'] + 1):
-            cliente_key = f"cliente_{i}"
-            if mesa[cliente_key]['nombre'] == cliente_nombre:
-                for pedido in mesa[cliente_key]['pedidos']:
-                    if pedido['id'] == pedido_id:
-                        # Verificar que el pedido esté listo para entregar
-                        if pedido.get('estado_cocina') != '✅ LISTO PARA ENTREGAR':
-                            print(f"⚠️ Error: El pedido debe estar listo para entregar antes de marcarlo como entregado")
-                            return False
-                            
-                        # Marcar como entregado
-                        pedido['entregado'] = True
-                        pedido['estado_cocina'] = '✅ Entregado'
-                        
-                        try:
-                            self.sistema_mesas.guardar_mesas()
-                            return True
-                        except Exception as e:
-                            print(f"⚠️ Error al guardar mesas (marcar_pedido_entregado): {e}")
-                            return False
-        return False
-
-    def _validar_mesa(self, mesa_id):
-        """Valida que la mesa exista y devuelve la lista asociada"""
-        if mesa_id not in self.sistema_mesas.mesas:
-            print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
-            return None
-        return self.sistema_mesas.mesas[mesa_id]
-
-    def _validar_mesa_estructura(self, mesa_data):
-        """Valida que la estructura de los datos de la mesa sea correcta"""
-        if not isinstance(mesa_data, list) or len(mesa_data) == 0 or not isinstance(mesa_data[0], dict):
-            print(f"⚠️ Error: Estructura de datos incorrecta para la mesa")
-            return False
-        return True
 
     def procesar_pedidos_mesa(self, mesa_id):
         """Procesa los pedidos de una mesa específica (incluyendo bebidas)."""

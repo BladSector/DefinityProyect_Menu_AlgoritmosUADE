@@ -52,15 +52,23 @@ let gestionarPedidoModal = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     gestionarPedidoModal = new bootstrap.Modal(document.getElementById('gestionarPedidoModal'));
-    // Actualización automática cada 5 segundos
+    
+    // Actualización automática cada 3 segundos
     setInterval(() => {
         const contenido = document.getElementById('contenidoDinamico');
-        if (contenido.innerHTML.includes('Gestionar pedidos activos')) {
+        const titulo = contenido.querySelector('.card-header h3')?.textContent || '';
+        
+        if (titulo.includes('Pedidos Activos en Cocina')) {
             gestionarPedidosActivos();
-        } else if (contenido.innerHTML.includes('Mapa del Restaurante')) {
+        } else if (titulo.includes('MAPA DEL RESTAURANTE')) {
             verMapaRestaurante();
+        } else if (titulo.includes('Detalles de la')) {
+            const mesaId = contenido.querySelector('.btn-primary')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (mesaId) {
+                verDetallesMesa(mesaId);
+            }
         }
-    }, 5000);
+    }, 3000);
 });
 
 function getBadgeClass(estado) {
@@ -86,39 +94,65 @@ function verMapaRestaurante() {
             if (!data.success) {
                 throw new Error(data.error);
             }
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>=== MAPA DEL RESTAURANTE ===</h3>
-                    </div>
-                    <div class="card-body">
-                        <h4>Mesas disponibles:</h4>
-                        <div class="list-group">
-                            ${data.data.map((mesa, index) => `
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">${index + 1}. ${mesa.nombre} [${mesa.estado === 'libre' ? '🟢 Libre' : '🟠 Ocupada'}]</h5>
+
+            // Verificar si ya existe un modal abierto
+            const modalExistente = document.getElementById('mapaRestauranteModal');
+            if (modalExistente) {
+                const modal = bootstrap.Modal.getInstance(modalExistente);
+                if (modal) {
+                    modal.hide();
+                }
+                modalExistente.remove();
+            }
+
+            const modalHtml = `
+                <div class="modal fade" id="mapaRestauranteModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">=== MAPA DEL RESTAURANTE ===</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <h4>Mesas disponibles:</h4>
+                                <div class="list-group">
+                                    ${data.data.map((mesa, index) => `
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <h5 class="mb-1">${index + 1}. ${mesa.nombre} [${mesa.estado === 'libre' ? '🟢 Libre' : '🟠 Ocupada'}]</h5>
+                                                </div>
+                                                <button class="btn ${mesa.estado === 'libre' ? 'btn-secondary' : 'btn-primary'}" onclick="verDetallesMesa('${mesa.id}')">
+                                                    Ver Detalles
+                                                </button>
+                                            </div>
                                         </div>
-                                        <button class="btn ${mesa.estado === 'libre' ? 'btn-secondary' : 'btn-primary'}" onclick="verDetallesMesa('${mesa.id}')">
-                                            Ver Detalles
-                                        </button>
-                                    </div>
+                                    `).join('')}
                                 </div>
-                            `).join('')}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
+
+            // Agregar el modal al body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('mapaRestauranteModal'));
+            modal.show();
+
+            // Limpiar el modal cuando se cierre
+            document.getElementById('mapaRestauranteModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('contenidoDinamico').innerHTML = `
-                <div class="alert alert-danger">
-                    Error al cargar el mapa del restaurante: ${error.message}
-                </div>
-            `;
+            mostrarMensaje('Error al cargar el mapa del restaurante: ' + error.message, 'danger');
         });
 }
 
@@ -129,78 +163,114 @@ function verDetallesMesa(mesaId) {
             if (!data.success) {
                 throw new Error(data.error);
             }
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>=== Detalles de la ${data.data.nombre} ===</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS EN COCINA ---</h4>
-                            ${data.data.pedidos_en_cocina && data.data.pedidos_en_cocina.length > 0 ? `
-                                <div class="list-group">
-                                    ${data.data.pedidos_en_cocina.map(pedido => `
-                                        <div class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <h5 class="mb-1">${pedido.cantidad}x ${pedido.nombre}</h5>
-                                                    <p class="mb-1">
-                                                        Estado: <span class="badge ${getBadgeClass(pedido.estado_cocina)}">${pedido.estado_cocina}</span>
-                                                        <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
-                                                    </p>
-                                                    ${pedido.notas && pedido.notas.length > 0 ? `
-                                                        <p class="mb-1">Notas: ${pedido.notas.map(nota => nota.texto).join(', ')}</p>
-                                                    ` : ''}
-                                                </div>
-                                                <button class="btn btn-primary" onclick="gestionarPedido('${mesaId}', '${pedido.id}')">
-                                                    Gestionar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-muted">(No hay pedidos en cocina)</p>'}
-                        </div>
 
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS ENTREGADOS ---</h4>
-                            ${data.data.pedidos_entregados && data.data.pedidos_entregados.length > 0 ? `
-                                <div class="list-group">
-                                    ${data.data.pedidos_entregados.map(pedido => `
-                                        <div class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <h5 class="mb-1">${pedido.cantidad}x ${pedido.nombre}</h5>
-                                                    <p class="mb-1">
-                                                        Estado: <span class="badge bg-success">✅ Entregado</span>
-                                                        <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-muted">(No hay pedidos entregados aún)</p>'}
-                        </div>
+            // Verificar si ya existe un modal abierto
+            const modalExistente = document.getElementById('detallesMesaModal');
+            if (modalExistente) {
+                const modal = bootstrap.Modal.getInstance(modalExistente);
+                if (modal) {
+                    modal.hide();
+                }
+                modalExistente.remove();
+            }
 
-                        <div class="text-center mt-4">
-                            <button class="btn btn-secondary" onclick="verMapaRestaurante()">
-                                Volver al Mapa de Mesas
-                            </button>
+            const modalHtml = `
+                <div class="modal fade" id="detallesMesaModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">=== Detalles de la ${data.data.nombre} ===</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-4">
+                                    <h4>--- PEDIDOS EN COCINA ---</h4>
+                                    ${data.data.pedidos_en_cocina && data.data.pedidos_en_cocina.length > 0 ? `
+                                        <div class="list-group">
+                                            ${data.data.pedidos_en_cocina.map(pedido => `
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h5 class="mb-1">${pedido.cantidad}x ${pedido.nombre}</h5>
+                                                            <p class="mb-1">
+                                                                Estado: <span class="badge ${getBadgeClass(pedido.estado_cocina)}">${pedido.estado_cocina}</span>
+                                                                <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
+                                                            </p>
+                                                            ${pedido.notas && pedido.notas.length > 0 ? `
+                                                                <p class="mb-1">Notas: ${pedido.notas.map(nota => nota.texto).join(', ')}</p>
+                                                            ` : ''}
+                                                        </div>
+                                                        <button class="btn btn-primary" onclick="gestionarPedido('${mesaId}', '${pedido.id}')">
+                                                            Gestionar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : '<p class="text-muted">(No hay pedidos en cocina)</p>'}
+                                </div>
+
+                                <div class="mb-4">
+                                    <h4>--- PEDIDOS ENTREGADOS ---</h4>
+                                    ${data.data.pedidos_entregados && data.data.pedidos_entregados.length > 0 ? `
+                                        <div class="list-group">
+                                            ${data.data.pedidos_entregados.map(pedido => `
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h5 class="mb-1">${pedido.cantidad}x ${pedido.nombre}</h5>
+                                                            <p class="mb-1">
+                                                                Estado: <span class="badge bg-success">✅ Entregado</span>
+                                                                <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : '<p class="text-muted">(No hay pedidos entregados aún)</p>'}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
+
+            // Agregar el modal al body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('detallesMesaModal'));
+            modal.show();
+
+            // Limpiar el modal cuando se cierre
+            document.getElementById('detallesMesaModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('contenidoDinamico').innerHTML = `
-                <div class="alert alert-danger">
-                    Error al cargar los detalles de la mesa: ${error.message}
-                </div>
-            `;
+            mostrarMensaje('Error al cargar los detalles de la mesa: ' + error.message, 'danger');
         });
+}
+
+function mostrarMensaje(mensaje, tipo) {
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+    alerta.innerHTML = `
+        ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.insertBefore(alerta, document.body.firstChild);
+    
+    // Auto-cerrar la alerta después de 5 segundos
+    setTimeout(() => {
+        alerta.classList.remove('show');
+        setTimeout(() => alerta.remove(), 150);
+    }, 5000);
 }
 
 function gestionarPedidosActivos() {
@@ -269,6 +339,25 @@ function gestionarPedidosActivos() {
 }
 
 function gestionarPedido(mesaId, pedidoId) {
+    // Cerrar modales existentes
+    const mapaModal = document.getElementById('mapaRestauranteModal');
+    if (mapaModal) {
+        const modal = bootstrap.Modal.getInstance(mapaModal);
+        if (modal) {
+            modal.hide();
+        }
+        mapaModal.remove();
+    }
+
+    const detallesModal = document.getElementById('detallesMesaModal');
+    if (detallesModal) {
+        const modal = bootstrap.Modal.getInstance(detallesModal);
+        if (modal) {
+            modal.hide();
+        }
+        detallesModal.remove();
+    }
+
     fetch(`/api/cocina/pedidos/${pedidoId}`)
         .then(response => response.json())
         .then(data => {

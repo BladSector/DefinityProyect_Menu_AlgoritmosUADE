@@ -1,0 +1,35 @@
+========================================
+           TICKET DE PAGO
+========================================
+
+Mesa: Mesa 1
+Fecha: 22/05/2025 15:49
+----------------------------------------
+
+Clientes:
+- Santiago 1
+
+DETALLE DE PEDIDOS:
+----------------------------------------
+1x Café con leche de avena - $4800
+
+1x Chocolate caliente vegano - $6000
+
+1x Ensalada César Vegana - $8800
+
+1x Hummus con crudités - $7900
+
+1x Rollitos de primavera veganos - $8900
+
+1x Raviolis de ricotta y nuez - $16200
+
+1x Carpaccio de remolacha - $9200
+
+1x Solomillo de res - $22000
+
+----------------------------------------
+TOTAL A PAGAR: $83800
+Método de pago: Efectivo
+========================================
+¡Gracias por su visita!
+========================================

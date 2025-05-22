@@ -14,14 +14,8 @@
                     <button class="list-group-item list-group-item-action" onclick="verMapaRestaurante()">
                         1. Mapa del Restaurante
                     </button>
-                    <button class="list-group-item list-group-item-action" onclick="marcarPedidoEntregado()">
-                        2. Marcar pedido como entregado
-                    </button>
-                    <button class="list-group-item list-group-item-action" onclick="gestionarComentarios()">
-                        3. Comentarios de Mesas
-                    </button>
                     <button class="list-group-item list-group-item-action" onclick="reiniciarMesa()">
-                        4. Reiniciar mesa
+                        2. Reiniciar mesa
                     </button>
                 </div>
             </div>
@@ -29,8 +23,42 @@
     </div>
 
     <div class="col-md-8">
-        <div id="contenidoDinamico">
-            <!-- Aquí se mostrará el contenido según la opción seleccionada -->
+        <div class="row">
+            <!-- Sección de Pagos Pendientes -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h4>Pagos Pendientes</h4>
+                    </div>
+                    <div class="card-body" id="pagosPendientesContainer">
+                        <!-- El contenido se actualizará automáticamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Pedidos Listos -->
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Pedidos Listos para Entregar</h4>
+                    </div>
+                    <div class="card-body" id="pedidosListosContainer">
+                        <!-- El contenido se actualizará automáticamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Comentarios Pendientes -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Comentarios Pendientes</h4>
+                    </div>
+                    <div class="card-body" id="comentariosContainer">
+                        <!-- El contenido se actualizará automáticamente -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -53,19 +81,17 @@
 
 <!-- Modal para reiniciar mesa -->
 <div class="modal fade" id="reiniciarMesaModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Reiniciar Mesa</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="detallesMesa"></div>
-                <div class="alert alert-warning mt-3">
-                    <h6>⚠️ Advertencia</h6>
-                    <p>Esta acción reiniciará completamente la mesa, eliminando todos los pedidos y comentarios.</p>
+                <!-- El contenido se actualizará automáticamente -->
                 </div>
-                <div id="opcionesReinicio" class="mt-3"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -81,219 +107,41 @@ document.addEventListener('DOMContentLoaded', function() {
     gestionarPedidoModal = new bootstrap.Modal(document.getElementById('gestionarPedidoModal'));
     reiniciarMesaModal = new bootstrap.Modal(document.getElementById('reiniciarMesaModal'));
     
-    // Actualización automática cada 5 segundos
+    // Cargar contenido inicial
+    actualizarPedidosListos();
+    actualizarComentarios();
+    actualizarPagosPendientes();
+    
+    // Actualización automática cada 3 segundos
     setInterval(() => {
-        const contenido = document.getElementById('contenidoDinamico');
-        if (contenido.innerHTML.includes('Pedidos Listos para Entregar')) {
-            marcarPedidoEntregado();
-        } else if (contenido.innerHTML.includes('Mapa del Restaurante')) {
-            verMapaRestaurante();
-        } else if (contenido.innerHTML.includes('Comentarios Pendientes')) {
-            gestionarComentarios();
-        }
-    }, 5000);
+        actualizarPedidosListos();
+        actualizarComentarios();
+        actualizarPagosPendientes();
+    }, 3000);
 });
 
-function verMapaRestaurante() {
-    fetch('/api/mozos/mapa-mesas')
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                throw new Error(data.error);
-            }
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>=== MAPA DEL RESTAURANTE ===</h3>
-                    </div>
-                    <div class="card-body">
-                        <h4>Mesas disponibles:</h4>
-                        <div class="list-group">
-                            ${data.data.map((mesa, index) => `
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">${index + 1}. ${mesa.nombre} [${mesa.estado === 'libre' ? '🟢 Libre' : '🟠 Ocupada'}]</h5>
-                                        </div>
-                                        <button class="btn ${mesa.estado === 'libre' ? 'btn-secondary' : 'btn-primary'}" onclick="verDetallesMesa('${mesa.id}')">
-                                            Ver Detalles
-                                        </button>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('contenidoDinamico').innerHTML = `
-                <div class="alert alert-danger">
-                    Error al cargar el mapa del restaurante: ${error.message}
-                </div>
-            `;
-        });
-}
-
-function verDetallesMesa(mesaId) {
-    fetch(`/api/mozos/mesas/${mesaId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                throw new Error(data.error);
-            }
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>=== Detalles de la Mesa ===</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS EN COCINA ---</h4>
-                            ${data.pedidos_en_cocina && data.pedidos_en_cocina.length > 0 ? `
-                                <div class="list-group">
-                                    ${data.pedidos_en_cocina.map(pedido => `
-                                        <div class="list-group-item">
-                                            <h5 class="mb-1">👤 ${pedido.cliente}</h5>
-                                            <p class="mb-1">${pedido.cantidad}x ${pedido.nombre}</p>
-                                            <p class="mb-1">
-                                                <span class="badge ${getBadgeClass(pedido.estado_cocina)}">
-                                                    ${pedido.estado_cocina}
-                                                </span>
-                                                ${pedido.retraso_minutos ? `<span class="badge bg-warning">⏳ Retraso: ${pedido.retraso_minutos} min</span>` : ''}
-                                                <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
-                                            </p>
-                                            ${pedido.notas && pedido.notas.length > 0 ? `
-                                                <small class="text-muted">
-                                                    📝 Notas:<br>
-                                                    ${pedido.notas.map(nota => `• ${nota.texto}`).join('<br>')}
-                                                </small>
-                                            ` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-muted">(No hay pedidos en cocina)</p>'}
-                        </div>
-
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS ENTREGADOS ---</h4>
-                            ${data.pedidos_entregados && data.pedidos_entregados.length > 0 ? `
-                                <div class="list-group">
-                                    ${data.pedidos_entregados.map(pedido => `
-                                        <div class="list-group-item">
-                                            <h5 class="mb-1">👤 ${pedido.cliente}</h5>
-                                            <p class="mb-1">${pedido.cantidad}x ${pedido.nombre}</p>
-                                            <p class="mb-1">
-                                                <span class="badge bg-success">✅ Entregado</span>
-                                                <span class="text-muted">[Enviado: ${pedido.hora_envio}]</span>
-                                            </p>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-muted">(No hay pedidos entregados aún)</p>'}
-                        </div>
-
-                        <div class="mb-4">
-                            <h4>--- SOLICITUDES AL CAMARERO ---</h4>
-                            ${data.solicitudes && data.solicitudes.length > 0 ? `
-                                <div class="list-group">
-                                    ${data.solicitudes.map(solicitud => `
-                                        <div class="list-group-item">
-                                            <h5 class="mb-1">👤 ${solicitud.cliente}</h5>
-                                            <p class="mb-1">📢 ${solicitud.mensaje}</p>
-                                            <p class="mb-1">
-                                                <span class="badge ${solicitud.resuelto ? 'bg-success' : 'bg-warning'}">
-                                                    ${solicitud.resuelto ? '✅ Realizado' : '💬 Pendiente'}
-                                                </span>
-                                                <span class="text-muted">[Enviado: ${solicitud.hora}]</span>
-                                            </p>
-                                            ${!solicitud.resuelto ? `
-                                                <button class="btn btn-success btn-sm" onclick="marcarSolicitudRealizada('${mesaId}', '${solicitud.cliente}', '${solicitud.mensaje}')">
-                                                    Marcar como Realizado
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-muted">(No hay solicitudes pendientes)</p>'}
-                        </div>
-
-                        <div class="text-center mt-4">
-                            <button class="btn btn-secondary" onclick="verMapaRestaurante()">
-                                Volver al Mapa de Mesas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('contenidoDinamico').innerHTML = `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>=== Detalles de la Mesa ===</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS EN COCINA ---</h4>
-                            <p class="text-muted">(No hay pedidos en cocina)</p>
-                        </div>
-                        <div class="mb-4">
-                            <h4>--- PEDIDOS ENTREGADOS ---</h4>
-                            <p class="text-muted">(No hay pedidos entregados aún)</p>
-                        </div>
-                        <div class="mb-4">
-                            <h4>--- SOLICITUDES AL CAMARERO ---</h4>
-                            <p class="text-muted">(No hay solicitudes pendientes)</p>
-                        </div>
-                        <div class="text-center mt-4">
-                            <button class="btn btn-secondary" onclick="verMapaRestaurante()">
-                                Volver al Mapa de Mesas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-}
-
-function marcarPedidoEntregado() {
+function actualizarPedidosListos() {
     fetch('/api/mozos/pedidos-listos')
         .then(response => response.json())
         .then(data => {
-            const contenido = document.getElementById('contenidoDinamico');
-            if (data.pedidos.length === 0) {
-                contenido.innerHTML = `
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h4>Pedidos Listos para Entregar</h4>
-                            <button class="btn btn-outline-primary" onclick="marcarPedidoEntregado()">
-                                <i class="fas fa-sync-alt"></i> Actualizar
-                            </button>
-                        </div>
-                        <div class="card-body">
+            const container = document.getElementById('pedidosListosContainer');
+            
+            // Limpiar el contenedor completamente
+            container.innerHTML = '';
+            
+            if (!data.pedidos || data.pedidos.length === 0) {
+                container.innerHTML = `
                             <div class="alert alert-info">
                                 <h4 class="alert-heading">ℹ️ No hay pedidos listos para entregar</h4>
                                 <p>Los pedidos aparecerán aquí cuando la cocina los marque como listos.</p>
-                            </div>
-                        </div>
                     </div>
                 `;
                 return;
             }
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4>Pedidos Listos para Entregar</h4>
-                        <button class="btn btn-outline-primary" onclick="marcarPedidoEntregado()">
-                            <i class="fas fa-sync-alt"></i> Actualizar
-                        </button>
-                    </div>
-                    <div class="card-body">
+
+            // Construir el nuevo contenido
+            const nuevoContenido = document.createElement('div');
+            nuevoContenido.innerHTML = `
                         <div class="list-group">
                             ${data.pedidos.map(pedido => `
                                 <div class="list-group-item">
@@ -320,21 +168,316 @@ function marcarPedidoEntregado() {
                                 </div>
                             `).join('')}
                         </div>
+            `;
+
+            // Agregar el nuevo contenido
+            container.appendChild(nuevoContenido.firstElementChild);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const container = document.getElementById('pedidosListosContainer');
+            const alertaError = document.createElement('div');
+            alertaError.className = 'alert alert-danger';
+            alertaError.textContent = `Error al cargar los pedidos listos: ${error.message}`;
+            container.insertBefore(alertaError, container.firstChild);
+            
+            // Auto-cerrar la alerta de error después de 5 segundos
+            setTimeout(() => {
+                alertaError.classList.remove('show');
+                setTimeout(() => alertaError.remove(), 150);
+            }, 5000);
+        });
+}
+
+function actualizarComentarios() {
+    fetch('/api/mozos/comentarios-pendientes')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('comentariosContainer');
+            if (data.comentarios.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading">No hay comentarios pendientes</h4>
+                        <p>En este momento no hay comentarios pendientes de resolver.</p>
                     </div>
+                `;
+                return;
+            }
+            container.innerHTML = `
+                <div class="list-group">
+                    ${data.comentarios.map((comentario, index) => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">${comentario.mesa_nombre}</h5>
+                                    <p class="mb-1">👤 ${comentario.cliente}</p>
+                                    <p class="mb-1">📝 ${comentario.texto}</p>
+                                    <small class="text-muted">[Enviado: ${comentario.hora}]</small>
+                                </div>
+                                <button class="btn btn-success" onclick="marcarComentarioRealizado('${comentario.mesa_id}', '${comentario.cliente}', '${comentario.texto}')">
+                                    Marcar como Realizado
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             `;
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('contenidoDinamico').innerHTML = `
+            document.getElementById('comentariosContainer').innerHTML = `
                 <div class="alert alert-danger">
-                    Error al cargar los pedidos listos: ${error.message}
+                    Error al cargar los comentarios: ${error.message}
                 </div>
             `;
         });
 }
 
+function verMapaRestaurante() {
+    fetch('/api/mozos/mapa-mesas')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Eliminar modal existente si hay uno
+                const modalExistente = document.getElementById('mapaRestauranteModal');
+                if (modalExistente) {
+                    modalExistente.remove();
+                }
+
+                // Crear el modal
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'mapaRestauranteModal';
+                modal.setAttribute('tabindex', '-1');
+                modal.setAttribute('aria-labelledby', 'mapaRestauranteModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+
+                // Crear el contenido del modal
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="mapaRestauranteModalLabel">Mapa del Restaurante</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row row-cols-1 row-cols-md-3 g-4">
+                                    ${data.data.map(mesa => `
+                                        <div class="col">
+                                            <div class="card h-100 ${mesa.estado === 'ocupada' ? 'border-danger' : 'border-success'}">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Mesa ${mesa.nombre}</h5>
+                                                    <p class="card-text">
+                                                        <span class="badge ${mesa.estado === 'ocupada' ? 'bg-danger' : 'bg-success'}">
+                                                            ${mesa.estado === 'ocupada' ? 'Ocupada' : 'Libre'}
+                                                        </span>
+                                                    </p>
+                                                    <button class="btn btn-primary btn-sm" onclick="verDetallesMesa('${mesa.id}')">
+                                                        Ver Detalles
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Agregar el modal al body
+                document.body.appendChild(modal);
+
+                // Inicializar el modal
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+
+                // Limpiar el modal cuando se cierre
+                modal.addEventListener('hidden.bs.modal', function () {
+                    modal.remove();
+                });
+            } else {
+                alert('Error al cargar el mapa del restaurante');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar el mapa del restaurante');
+        });
+}
+
+function verDetallesMesa(mesaId) {
+    fetch(`/api/mozos/mesas/${mesaId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Eliminar modal existente si hay uno
+                const modalExistente = document.getElementById('detallesMesaModal');
+                if (modalExistente) {
+                    modalExistente.remove();
+                }
+
+                // Crear el modal
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.id = 'detallesMesaModal';
+                modal.setAttribute('tabindex', '-1');
+                modal.setAttribute('aria-labelledby', 'detallesMesaModalLabel');
+                modal.setAttribute('aria-hidden', 'true');
+
+                // Crear el contenido del modal
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="detallesMesaModalLabel">Detalles ${data.data.nombre}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="accordion" id="accordionDetalles">
+                                    <!-- Pedidos en Cocina -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCocina">
+                                                Pedidos en Cocina (${data.data.pedidos_en_cocina.length})
+                                            </button>
+                                        </h2>
+                                        <div id="collapseCocina" class="accordion-collapse collapse show" data-bs-parent="#accordionDetalles">
+                                            <div class="accordion-body">
+                                                ${data.data.pedidos_en_cocina.length > 0 ? 
+                                                    data.data.pedidos_en_cocina.map(pedido => `
+                                                        <div class="card mb-2">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title">${pedido.nombre} (${pedido.cliente})</h6>
+                                                                <p class="card-text">
+                                                                    Cantidad: ${pedido.cantidad}<br>
+                                                                    Estado: ${pedido.estado_cocina}<br>
+                                                                    Hora: ${pedido.hora_envio}
+                                                                </p>
+                                                                ${pedido.notas && pedido.notas.length > 0 ? `
+                                                                    <div class="alert alert-info">
+                                                                        <small>Notas: ${pedido.notas.map(n => n.texto).join(', ')}</small>
+                                                                    </div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                    `).join('') : 
+                                                    '<p class="text-muted">No hay pedidos en cocina</p>'
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pedidos Entregados -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEntregados">
+                                                Pedidos Entregados (${data.data.pedidos_entregados.length})
+                                            </button>
+                                        </h2>
+                                        <div id="collapseEntregados" class="accordion-collapse collapse" data-bs-parent="#accordionDetalles">
+                                            <div class="accordion-body">
+                                                ${data.data.pedidos_entregados.length > 0 ? 
+                                                    data.data.pedidos_entregados.map(pedido => `
+                                                        <div class="card mb-2">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title">${pedido.nombre} (${pedido.cliente})</h6>
+                                                                <p class="card-text">
+                                                                    Cantidad: ${pedido.cantidad}<br>
+                                                                    Estado: ${pedido.estado_cocina}<br>
+                                                                    Hora: ${pedido.hora_envio}
+                                                                </p>
+                                                                ${pedido.notas && pedido.notas.length > 0 ? `
+                                                                    <div class="alert alert-info">
+                                                                        <small>Notas: ${pedido.notas.map(n => n.texto).join(', ')}</small>
+                                                                    </div>
+                                                                ` : ''}
+                                                            </div>
+                                                        </div>
+                                                    `).join('') : 
+                                                    '<p class="text-muted">No hay pedidos entregados</p>'
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Solicitudes al Camarero -->
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSolicitudes">
+                                                Solicitudes al Camarero (${data.data.comentarios_camarero ? data.data.comentarios_camarero.length : 0})
+                                            </button>
+                                        </h2>
+                                        <div id="collapseSolicitudes" class="accordion-collapse collapse" data-bs-parent="#accordionDetalles">
+                                            <div class="accordion-body">
+                                                ${data.data.comentarios_camarero && data.data.comentarios_camarero.length > 0 ? 
+                                                    data.data.comentarios_camarero.map(solicitud => `
+                                                        <div class="card mb-2">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title">${solicitud.cliente}</h6>
+                                                                <p class="card-text">
+                                                                    ${solicitud.mensaje}<br>
+                                                                    <small class="text-muted">Hora: ${solicitud.hora}</small>
+                                                                </p>
+                                                                ${!solicitud.resuelto ? `
+                                                                    <button class="btn btn-success btn-sm" onclick="marcarSolicitudResuelta('${mesaId}', '${solicitud.cliente}', '${solicitud.mensaje}')">
+                                                                        Marcar como Resuelto
+                                                                    </button>
+                                                                ` : `
+                                                                    <span class="badge bg-success">Resuelto</span>
+                                                                `}
+                                                            </div>
+                                                        </div>
+                                                    `).join('') : 
+                                                    '<p class="text-muted">No hay solicitudes pendientes</p>'
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Agregar el modal al body
+                document.body.appendChild(modal);
+
+                // Inicializar el modal
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+
+                // Limpiar el modal cuando se cierre
+                modal.addEventListener('hidden.bs.modal', function () {
+                    modal.remove();
+                });
+            } else {
+                alert('Error al cargar los detalles de la mesa');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cargar los detalles de la mesa');
+        });
+}
+
 function mostrarConfirmacionEntrega(mesaId, cliente, pedidoId, nombrePedido, nombreMesa) {
+    // Verificar si ya existe un modal abierto
+    const modalExistente = document.getElementById('confirmacionEntregaModal');
+    if (modalExistente) {
+        const modal = bootstrap.Modal.getInstance(modalExistente);
+        if (modal) {
+            modal.hide();
+        }
+        modalExistente.remove();
+    }
+
     const modalHtml = `
         <div class="modal fade" id="confirmacionEntregaModal" tabindex="-1">
             <div class="modal-dialog">
@@ -360,19 +503,22 @@ function mostrarConfirmacionEntrega(mesaId, cliente, pedidoId, nombrePedido, nom
         </div>
     `;
 
-    // Agregar el modal al body si no existe
-    if (!document.getElementById('confirmacionEntregaModal')) {
+    // Agregar el modal al body
         document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
 
     // Mostrar el modal
     const modal = new bootstrap.Modal(document.getElementById('confirmacionEntregaModal'));
     modal.show();
+
+    // Limpiar el modal cuando se cierre
+    document.getElementById('confirmacionEntregaModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
 }
 
 function confirmarEntrega(mesaId, cliente, pedidoId) {
     fetch(`/api/mozos/pedidos/${pedidoId}/entregar`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -384,15 +530,30 @@ function confirmarEntrega(mesaId, cliente, pedidoId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Cerrar el modal
+            // Cerrar el modal de confirmación
             const modal = bootstrap.Modal.getInstance(document.getElementById('confirmacionEntregaModal'));
             modal.hide();
             
             // Mostrar mensaje de éxito
-            mostrarMensaje('Pedido marcado como entregado exitosamente', 'success');
+            const container = document.getElementById('pedidosListosContainer');
+            const alerta = document.createElement('div');
+            alerta.className = 'alert alert-success alert-dismissible fade show';
+            alerta.innerHTML = `
+                <strong>✅ Pedido entregado exitosamente</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            container.insertBefore(alerta, container.firstChild);
             
-            // Actualizar la lista de pedidos
-            setTimeout(() => marcarPedidoEntregado(), 1000);
+            // Auto-cerrar la alerta después de 3 segundos
+            setTimeout(() => {
+                alerta.classList.remove('show');
+                setTimeout(() => alerta.remove(), 150);
+            }, 3000);
+            
+            // Solo actualizar la lista de pedidos
+            setTimeout(() => {
+                actualizarPedidosListos();
+            }, 500);
         } else {
             mostrarMensaje(data.error || 'Error al marcar el pedido como entregado', 'danger');
         }
@@ -402,63 +563,54 @@ function confirmarEntrega(mesaId, cliente, pedidoId) {
     });
 }
 
-function gestionarComentarios() {
-    fetch('/api/mozos/comentarios-pendientes')
-        .then(response => response.json())
-        .then(data => {
-            const contenido = document.getElementById('contenidoDinamico');
-            if (data.comentarios.length === 0) {
-                contenido.innerHTML = `
-                    <div class="alert alert-info">
-                        <h4 class="alert-heading">No hay comentarios pendientes</h4>
-                        <p>En este momento no hay comentarios pendientes de resolver.</p>
-                    </div>
-                `;
-                return;
-            }
-            contenido.innerHTML = `
-                <h3>Comentarios Pendientes</h3>
-                <div class="list-group">
-                    ${data.comentarios.map((comentario, index) => `
-                        <div class="list-group-item">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">${comentario.mesa_nombre}</h5>
-                                    <p class="mb-1">👤 ${comentario.cliente}</p>
-                                    <p class="mb-1">📝 ${comentario.texto}</p>
-                                    <small class="text-muted">[Enviado: ${comentario.hora}]</small>
-                                </div>
-                                <button class="btn btn-success" onclick="marcarComentarioRealizado('${comentario.mesa_id}', '${comentario.cliente}', '${comentario.texto}')">
-                                    Marcar como Realizado
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        });
-}
-
 function marcarComentarioRealizado(mesaId, cliente, texto) {
-    const contenido = document.getElementById('contenidoDinamico');
-    contenido.innerHTML = `
-        <div class="card">
-            <div class="card-header">
-                <h4>Confirmar Acción</h4>
-            </div>
-            <div class="card-body">
-                <p>¿Está seguro que desea marcar este comentario como realizado?</p>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-success" onclick="confirmarMarcarComentario('${mesaId}', '${cliente}', '${texto}')">
+    // Verificar si ya existe un modal abierto
+    const modalExistente = document.getElementById('confirmacionComentarioModal');
+    if (modalExistente) {
+        const modal = bootstrap.Modal.getInstance(modalExistente);
+        if (modal) {
+            modal.hide();
+        }
+        modalExistente.remove();
+    }
+
+    const modalHtml = `
+        <div class="modal fade" id="confirmacionComentarioModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Acción</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <p><strong>Cliente:</strong> ${cliente}</p>
+                            <p><strong>Comentario:</strong> ${texto}</p>
+                        </div>
+                        <p>¿Está seguro que desea marcar este comentario como realizado?</p>
+                </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success" onclick="confirmarMarcarComentario('${mesaId}', '${cliente}', '${texto}')">
                         Sí, marcar como realizado
                     </button>
-                    <button class="btn btn-secondary" onclick="gestionarComentarios()">
-                        No, cancelar
-                    </button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
+
+    // Agregar el modal al body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmacionComentarioModal'));
+    modal.show();
+
+    // Limpiar el modal cuando se cierre
+    document.getElementById('confirmacionComentarioModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
 }
 
 function confirmarMarcarComentario(mesaId, cliente, texto) {
@@ -475,34 +627,34 @@ function confirmarMarcarComentario(mesaId, cliente, texto) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        <h4>✅ Comentario Marcado como Realizado</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-success">
-                            <h5>El comentario ha sido marcado como realizado exitosamente</h5>
-                            <hr>
-                            <p><strong>Cliente:</strong> ${data.data.cliente}</p>
-                            <p><strong>Comentario:</strong> ${data.data.texto}</p>
-                            <p><strong>Hora de resolución:</strong> ${data.data.hora}</p>
-                        </div>
-                        <div class="text-center mt-3">
-                            <button class="btn btn-primary" onclick="gestionarComentarios()">
-                                Volver a la lista de comentarios
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmacionComentarioModal'));
+            modal.hide();
+            
+            // Mostrar mensaje de éxito en la sección de comentarios
+            const container = document.getElementById('comentariosContainer');
+            const alerta = document.createElement('div');
+            alerta.className = 'alert alert-success alert-dismissible fade show';
+            alerta.innerHTML = `
+                <strong>✅ Comentario marcado como realizado exitosamente</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             `;
+            container.insertBefore(alerta, container.firstChild);
+            
+            // Auto-cerrar la alerta después de 3 segundos
+            setTimeout(() => {
+                alerta.classList.remove('show');
+                setTimeout(() => alerta.remove(), 150);
+            }, 3000);
+            
+            // Actualizar la lista de comentarios inmediatamente
+            setTimeout(() => actualizarComentarios(), 500);
         } else {
-            mostrarMensaje('Error: ' + data.error, 'danger');
+            mostrarMensaje(data.error || 'Error al marcar el comentario como realizado', 'danger');
         }
     })
     .catch(error => {
-        mostrarMensaje('Error al procesar la solicitud: ' + error.message, 'danger');
+        mostrarMensaje('Error al marcar el comentario como realizado: ' + error.message, 'danger');
     });
 }
 
@@ -523,16 +675,15 @@ function mostrarMensaje(mensaje, tipo) {
     }, 5000);
 }
 
-function marcarSolicitudRealizada(mesaId, cliente, mensaje) {
-    if (confirm('¿Está seguro que desea marcar esta solicitud como realizada?')) {
-        fetch(`/api/mozos/solicitudes/${mesaId}/realizar`, {
+function marcarSolicitudResuelta(mesaId, cliente) {
+    if (confirm('¿Está seguro que desea marcar esta solicitud como resuelta?')) {
+        fetch(`/api/mozos/solicitudes/${mesaId}/resuelta`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                cliente: cliente,
-                mensaje: mensaje
+                cliente: cliente
             })
         })
         .then(response => response.json())
@@ -542,14 +693,13 @@ function marcarSolicitudRealizada(mesaId, cliente, mensaje) {
                 contenido.innerHTML = `
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            <h4>✅ Solicitud Marcada como Realizada</h4>
+                            <h4>✅ Solicitud Marcada como Resuelta</h4>
                         </div>
                         <div class="card-body">
                             <div class="alert alert-success">
-                                <h5>La solicitud ha sido marcada como realizada exitosamente</h5>
+                                <h5>La solicitud ha sido marcada como resuelta exitosamente</h5>
                                 <hr>
                                 <p><strong>Cliente:</strong> ${cliente}</p>
-                                <p><strong>Solicitud:</strong> ${mensaje}</p>
                                 <p><strong>Hora de resolución:</strong> ${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</p>
                             </div>
                             <div class="text-center mt-3">
@@ -574,18 +724,31 @@ function reiniciarMesa() {
     fetch('/api/mozos/mesas-ocupadas')
         .then(response => response.json())
         .then(data => {
-            const contenido = document.getElementById('contenidoDinamico');
-            if (data.mesas.length === 0) {
-                contenido.innerHTML = `
+            // Verificar si ya existe un modal abierto
+            const modalExistente = document.getElementById('reiniciarMesaModal');
+            if (modalExistente) {
+                const modal = bootstrap.Modal.getInstance(modalExistente);
+                if (modal) {
+                    modal.hide();
+                }
+                modalExistente.remove();
+            }
+
+            const modalHtml = `
+                <div class="modal fade" id="reiniciarMesaModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Reiniciar Mesa</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${data.mesas.length === 0 ? `
                     <div class="alert alert-info">
                         <h4 class="alert-heading">No hay mesas ocupadas</h4>
                         <p>En este momento no hay mesas que puedan ser reiniciadas.</p>
                     </div>
-                `;
-                return;
-            }
-            contenido.innerHTML = `
-                <h3>Reiniciar Mesa</h3>
+                                ` : `
                 <div class="list-group">
                     ${data.mesas.map((mesa, index) => `
                         <div class="list-group-item">
@@ -600,26 +763,128 @@ function reiniciarMesa() {
                             </div>
                         </div>
                     `).join('')}
+                                    </div>
+                                `}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
+
+            // Agregar el modal al body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('reiniciarMesaModal'));
+            modal.show();
+
+            // Limpiar el modal cuando se cierre
+            document.getElementById('reiniciarMesaModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarMensaje('Error al cargar las mesas: ' + error.message, 'danger');
         });
 }
 
 function confirmarReinicioMesa(mesaId) {
-    if (confirm('⚠️ ¿Está seguro que desea reiniciar esta mesa? Esta acción no se puede deshacer.')) {
+    // Verificar si ya existe un modal abierto
+    const modalExistente = document.getElementById('confirmacionReinicioModal');
+    if (modalExistente) {
+        const modal = bootstrap.Modal.getInstance(modalExistente);
+        if (modal) {
+            modal.hide();
+        }
+        modalExistente.remove();
+    }
+
+    const modalHtml = `
+        <div class="modal fade" id="confirmacionReinicioModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Reinicio</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <h4 class="alert-heading">⚠️ Advertencia</h4>
+                            <p>Esta acción reiniciará completamente la mesa, eliminando todos los pedidos y comentarios.</p>
+                            <p>¿Está seguro que desea continuar?</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-danger" onclick="ejecutarReinicioMesa('${mesaId}')">
+                            Sí, reiniciar mesa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Agregar el modal al body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmacionReinicioModal'));
+    modal.show();
+
+    // Limpiar el modal cuando se cierre
+    document.getElementById('confirmacionReinicioModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
+}
+
+function ejecutarReinicioMesa(mesaId) {
+    // Cerrar el modal de confirmación
+    const modalConfirmacion = bootstrap.Modal.getInstance(document.getElementById('confirmacionReinicioModal'));
+    modalConfirmacion.hide();
+
         fetch(`/api/mozos/mesas/${mesaId}/reiniciar`, {
             method: 'POST'
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Mesa reiniciada exitosamente');
-                reiniciarMesa();
+            // Cerrar el modal de reinicio
+            const modalReinicio = bootstrap.Modal.getInstance(document.getElementById('reiniciarMesaModal'));
+            modalReinicio.hide();
+            
+            // Mostrar mensaje de éxito
+            const container = document.getElementById('pedidosListosContainer');
+            const alerta = document.createElement('div');
+            alerta.className = 'alert alert-success alert-dismissible fade show';
+            alerta.innerHTML = `
+                <strong>✅ Mesa reiniciada exitosamente</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            container.insertBefore(alerta, container.firstChild);
+            
+            // Auto-cerrar la alerta después de 3 segundos
+            setTimeout(() => {
+                alerta.classList.remove('show');
+                setTimeout(() => alerta.remove(), 150);
+            }, 3000);
+            
+            // Actualizar las listas
+            setTimeout(() => {
+                actualizarPedidosListos();
+                actualizarComentarios();
+            }, 500);
             } else {
-                alert('Error: ' + data.error);
+            mostrarMensaje('Error: ' + data.error, 'danger');
             }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al reiniciar la mesa: ' + error.message, 'danger');
         });
-    }
 }
 
 function getBadgeClass(estado) {
@@ -634,6 +899,104 @@ function getBadgeClass(estado) {
             return 'bg-danger';
         default:
             return 'bg-secondary';
+    }
+}
+
+function actualizarPagosPendientes() {
+    fetch('/api/mozos/pagos-pendientes')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('pagosPendientesContainer');
+            
+            if (!data.pagos || data.pagos.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <h4 class="alert-heading">No hay pagos pendientes</h4>
+                        <p>Los pagos aparecerán aquí cuando los clientes soliciten pagar su cuenta.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="list-group">
+                    ${data.pagos.map(pago => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">Mesa ${pago.mesa_nombre}</h5>
+                                    <p class="mb-1">
+                                        <strong>Cliente:</strong> ${pago.cliente}<br>
+                                        <strong>Tipo:</strong> ${pago.tipo_pago}<br>
+                                        <strong>Método:</strong> ${pago.metodo_pago}<br>
+                                        <strong>Total:</strong> $${pago.total}
+                                    </p>
+                                    <small class="text-muted">Solicitado: ${pago.hora_solicitud}</small>
+                                </div>
+                                <div>
+                                    <button class="btn btn-success" onclick="confirmarPago('${pago.mesa_id}', '${pago.cliente}', '${pago.tipo_pago}', '${pago.metodo_pago}', ${pago.total})">
+                                        Confirmar Pago
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const container = document.getElementById('pagosPendientesContainer');
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    Error al cargar los pagos pendientes: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function confirmarPago(mesaId, cliente, tipoPago, metodoPago, total) {
+    if (confirm(`¿Confirmar pago de $${total} por ${cliente} (${tipoPago} - ${metodoPago})?`)) {
+        fetch(`/api/mozos/pagos/${mesaId}/confirmar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cliente: cliente,
+                tipo_pago: tipoPago,
+                metodo_pago: metodoPago,
+                total: total
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar mensaje de éxito
+                const container = document.getElementById('pagosPendientesContainer');
+                const alerta = document.createElement('div');
+                alerta.className = 'alert alert-success alert-dismissible fade show';
+                alerta.innerHTML = `
+                    <strong>✅ Pago confirmado exitosamente</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                container.insertBefore(alerta, container.firstChild);
+                
+                // Auto-cerrar la alerta después de 3 segundos
+                setTimeout(() => {
+                    alerta.classList.remove('show');
+                    setTimeout(() => alerta.remove(), 150);
+                }, 3000);
+                
+                // Actualizar la lista de pagos
+                setTimeout(() => actualizarPagosPendientes(), 500);
+            } else {
+                mostrarMensaje(data.error || 'Error al confirmar el pago', 'danger');
+            }
+        })
+        .catch(error => {
+            mostrarMensaje('Error al confirmar el pago: ' + error.message, 'danger');
+        });
     }
 }
 </script>

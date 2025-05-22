@@ -43,7 +43,7 @@
                     <button class="list-group-item list-group-item-action" onclick="llamarCamarero()">
                         5. Llamar al camarero
                     </button>
-                    <button class="list-group-item list-group-item-action" onclick="pagarCuenta()">
+                    <button class="list-group-item list-group-item-action" onclick="mostrarOpcionesPago()">
                         6. Pagar cuenta
                     </button>
                 </div>
@@ -137,6 +137,14 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelarPedidoPendiente();
         }
     }, 3000);
+
+    // Agregar el botón de pago en la interfaz
+    const contenido = document.getElementById('contenidoDinamico');
+    const botonPagar = document.createElement('button');
+    botonPagar.className = 'btn btn-success position-fixed bottom-0 end-0 m-4';
+    botonPagar.innerHTML = '<i class="fas fa-money-bill-wave"></i> Pagar Cuenta';
+    botonPagar.onclick = mostrarOpcionesPago;
+    contenido.appendChild(botonPagar);
 });
 
 function accederMesa() {
@@ -439,7 +447,7 @@ function cancelarPedidoPendiente() {
                                     ${pedido.notas ? `
                                         <small class="text-muted">
                                             📝 Notas:<br>
-                                            ${pedido.notas.map(nota => `• ${nota.texto} (${nota.hora})`).join('<br>')}
+                                            ${pedido.notas.map(nota => `• ${nota.texto} `).join('<br>')}
                                         </small>
                                     ` : ''}
                                     <button class="btn btn-danger btn-sm mt-2" onclick="confirmarCancelarPedido('${pedido.id}')">
@@ -482,76 +490,52 @@ function verResumenGrupal() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-            const contenido = document.getElementById('contenidoDinamico');
-            contenido.innerHTML = `
-                <div class="card">
+                const contenido = document.getElementById('contenidoDinamico');
+                contenido.innerHTML = `
+                    <div class="card">
                         <div class="card-header">
-                        <h4>Resumen Grupal</h4>
-                    </div>
-                    <div class="card-body">
+                            <h4>Resumen Grupal</h4>
+                        </div>
+                        <div class="card-body">
                             ${data.resumen.map(cliente => `
                                 <div class="mb-4">
                                     <h5>👤 ${cliente.nombre}</h5>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
                                                     <th>Pedido</th>
-                                        <th>Estado</th>
-                                        <th>Notas</th>
+                                                    <th>Estado</th>
+                                                    <th>Notas</th>
                                                     <th>Precio</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
                                                 ${cliente.pedidos.map(pedido => `
                                                     <tr>
                                                         <td>${pedido.cantidad}x ${pedido.nombre}</td>
-                                                        <td>${pedido.estado_cocina}</td>
+                                                        <td>
+                                                            ${pedido.entregado ? 
+                                                                '<span class="badge bg-success">✅ Entregado</span>' : 
+                                                                `<span class="badge ${getBadgeClass(pedido.estado_cocina)}</span>`
+                                                            }
+                                                        </td>
                                                         <td>
                                                             ${pedido.notas ? pedido.notas.map(nota => 
-                                                                `<div>• ${nota.texto} (${nota.hora})</div>`
+                                                                `<div>• ${nota.texto}</div>`
                                                             ).join('') : ''}
-                                            </td>
+                                                        </td>
                                                         <td>$${pedido.precio * pedido.cantidad}</td>
                                                     </tr>
                                                 `).join('')}
                                             </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
-                                                    <td><strong>$${cliente.subtotal}</strong></td>
-                                        </tr>
-                                            </tfoot>
-                            </table>
-                        </div>
+                                        </table>
+                                    </div>
                                 </div>
                             `).join('')}
-                        
-                            ${data.solicitudes_camarero.length > 0 ? `
-                            <div class="mt-4">
-                                    <h5>📢 Solicitudes al Camarero</h5>
-                                <div class="list-group">
-                                    ${data.solicitudes_camarero.map(solicitud => `
-                                        <div class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                        <strong>👤 ${solicitud.cliente}:</strong>
-                                                    <p class="mb-0">${solicitud.mensaje}</p>
-                                                    </div>
-                                                    <small class="text-muted">${solicitud.hora}</small>
-                                                </div>
-                                            </div>
-                                        `).join('')}
-                                        </div>
-                                </div>
-                            ` : ''}
-                            
-                            <div class="mt-4 text-end">
-                                <h4>Total: $${data.total}</h4>
-                            </div>
                         </div>
-                </div>
-            `;
+                    </div>
+                `;
             } else {
                 alert('Error al obtener el resumen: ' + data.error);
             }
@@ -566,10 +550,28 @@ function verResumenGrupal() {
         });
 }
 
-// Agregar función para actualizar el resumen cuando el mozo marca como entregado
-function actualizarResumenGrupal() {
-    if (document.getElementById('contenidoDinamico').innerHTML.includes('Resumen Grupal')) {
-        verResumenGrupal();
+function getBadgeClass(estado) {
+    // Función para capitalizar la primera letra
+    const capitalizarPrimeraLetra = (texto) => {
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    };
+
+    // Extraer el emoji y el texto del estado
+    const emoji = estado.match(/^[^\s]+/)?.[0] || '';
+    const texto = estado.replace(/^[^\s]+\s*/, '');
+
+    switch(estado) {
+        case '⏳ PENDIENTE':
+        case '🟡 Pendiente en cocina':
+            return `bg-warning">${emoji} ${capitalizarPrimeraLetra(texto)}`;
+        case '👨‍🍳 EN PREPARACIÓN':
+            return `bg-primary">${emoji} ${capitalizarPrimeraLetra(texto)}`;
+        case '✅ LISTO PARA ENTREGAR':
+            return `bg-success">${emoji} ${capitalizarPrimeraLetra(texto)}`;
+        case '🔴 CANCELADO':
+            return `bg-danger">${emoji} ${capitalizarPrimeraLetra(texto)}`;
+        default:
+            return `bg-secondary">${emoji} ${capitalizarPrimeraLetra(texto)}`;
     }
 }
 
@@ -790,22 +792,6 @@ function enviarSolicitudCamarero() {
     });
 }
 
-function getBadgeClass(estado) {
-    switch(estado) {
-        case '⏳ PENDIENTE':
-        case '🟡 Pendiente en cocina':
-            return 'bg-warning';
-        case '👨‍🍳 EN PREPARACIÓN':
-            return 'bg-primary';
-        case '✅ LISTO PARA ENTREGAR':
-            return 'bg-success';
-        case '🔴 CANCELADO':
-            return 'bg-danger';
-        default:
-            return 'bg-secondary';
-    }
-}
-
 function confirmarEnvioCocina() {
     fetch(`/api/mesas/${mesaActual}/enviar-cocina`, {
         method: 'POST'
@@ -824,6 +810,223 @@ function confirmarEnvioCocina() {
     })
     .catch(error => {
         mostrarMensaje('Error al enviar pedidos a cocina: ' + error.message, 'danger');
+    });
+}
+
+function mostrarOpcionesPago() {
+    // Verificar si hay más de un cliente
+    fetch('/api/clientes/cuenta')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const clientes = Object.keys(data.pedidos_por_cliente);
+                const modalHtml = `
+                    <div class="modal fade" id="opcionesPagoModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Opciones de Pago</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="list-group">
+                                        ${clientes.length === 1 ? `
+                                            <button class="list-group-item list-group-item-action" onclick="seleccionarTipoPago('individual')">
+                                                Pago Individual
+                                            </button>
+                                        ` : `
+                                            <button class="list-group-item list-group-item-action" onclick="seleccionarTipoPago('individual')">
+                                                Pago Individual
+                                            </button>
+                                            <button class="list-group-item list-group-item-action" onclick="seleccionarTipoPago('grupal')">
+                                                Pago Grupal
+                                            </button>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Agregar el modal al body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // Mostrar el modal
+                const modal = new bootstrap.Modal(document.getElementById('opcionesPagoModal'));
+                modal.show();
+
+                // Limpiar el modal cuando se cierre
+                document.getElementById('opcionesPagoModal').addEventListener('hidden.bs.modal', function () {
+                    this.remove();
+                });
+            } else {
+                mostrarMensaje('Error al obtener la información de la cuenta', 'danger');
+            }
+        })
+        .catch(error => {
+            mostrarMensaje('Error al obtener la información de la cuenta: ' + error.message, 'danger');
+        });
+}
+
+function seleccionarTipoPago(tipo) {
+    // Cerrar el modal de opciones
+    const modalOpciones = bootstrap.Modal.getInstance(document.getElementById('opcionesPagoModal'));
+    modalOpciones.hide();
+
+    // Obtener el total de la cuenta
+    fetch('/api/clientes/cuenta')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const total = tipo === 'individual' ? data.total_individual : data.total_grupal;
+                mostrarMetodosPago(tipo, total);
+            } else {
+                mostrarMensaje('Error al obtener el total de la cuenta', 'danger');
+            }
+        })
+        .catch(error => {
+            mostrarMensaje('Error al obtener el total de la cuenta: ' + error.message, 'danger');
+        });
+}
+
+function mostrarMetodosPago(tipo, total) {
+    const modalHtml = `
+        <div class="modal fade" id="metodosPagoModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Seleccionar Método de Pago</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <h5>Total a pagar: $${total}</h5>
+                            <p>Tipo de pago: ${tipo === 'individual' ? 'Individual' : 'Grupal'}</p>
+                        </div>
+                        <div class="list-group">
+                            <button class="list-group-item list-group-item-action" onclick="confirmarPago('${tipo}', 'efectivo', ${total})">
+                                <i class="fas fa-money-bill-wave"></i> Efectivo
+                            </button>
+                            <button class="list-group-item list-group-item-action" onclick="confirmarPago('${tipo}', 'tarjeta', ${total})">
+                                <i class="fas fa-credit-card"></i> Tarjeta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Agregar el modal al body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('metodosPagoModal'));
+    modal.show();
+
+    // Limpiar el modal cuando se cierre
+    document.getElementById('metodosPagoModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
+}
+
+function confirmarPago(tipo, metodo, total) {
+    // Cerrar el modal de métodos de pago
+    const modalMetodos = bootstrap.Modal.getInstance(document.getElementById('metodosPagoModal'));
+    modalMetodos.hide();
+
+    const modalHtml = `
+        <div class="modal fade" id="confirmacionPagoModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmar Pago</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <h5>Resumen del pago:</h5>
+                            <p><strong>Tipo:</strong> ${tipo === 'individual' ? 'Individual' : 'Grupal'}</p>
+                            <p><strong>Método:</strong> ${metodo === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</p>
+                            <p><strong>Total:</strong> $${total}</p>
+                        </div>
+                        <p>¿Desea proceder con el pago?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success" onclick="procesarPago('${tipo}', '${metodo}', ${total})">
+                            Confirmar Pago
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Agregar el modal al body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Mostrar el modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmacionPagoModal'));
+    modal.show();
+
+    // Limpiar el modal cuando se cierre
+    document.getElementById('confirmacionPagoModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
+}
+
+function procesarPago(tipo, metodo, total) {
+    // Cerrar el modal de confirmación
+    const modalConfirmacion = bootstrap.Modal.getInstance(document.getElementById('confirmacionPagoModal'));
+    modalConfirmacion.hide();
+
+    fetch('/api/clientes/pagar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tipo_pago: tipo,
+            metodo_pago: metodo,
+            total: total
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar mensaje de éxito
+            const contenido = document.getElementById('contenidoDinamico');
+            contenido.innerHTML = `
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4>✅ Pago Procesado</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <h5>Su solicitud de pago ha sido procesado y enviado a un mozo.</h5>
+                            <h5>Aguarde porfavor.</h5>
+                            <hr>
+                            <p><strong>Tipo de pago:</strong> ${tipo === 'individual' ? 'Individual' : 'Grupal'}</p>
+                            <p><strong>Método de pago:</strong> ${metodo === 'efectivo' ? 'Efectivo' : 'Tarjeta'}</p>
+                            <p><strong>Total:</strong> $${total}</p>
+                            <p><strong>Hora:</strong> ${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary" onclick="window.location.reload()">
+                                Volver al menú
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            mostrarMensaje('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        mostrarMensaje('Error al procesar el pago: ' + error.message, 'danger');
     });
 }
 </script>

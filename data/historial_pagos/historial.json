@@ -1,0 +1,254 @@
+[
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 15:54:18",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 83800,
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Chocolate caliente vegano",
+                "cantidad": 1,
+                "precio": 6000,
+                "subtotal": 6000
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Ensalada C\u00e9sar Vegana",
+                "cantidad": 1,
+                "precio": 8800,
+                "subtotal": 8800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Hummus con crudit\u00e9s",
+                "cantidad": 1,
+                "precio": 7900,
+                "subtotal": 7900
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Rollitos de primavera veganos",
+                "cantidad": 1,
+                "precio": 8900,
+                "subtotal": 8900
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Raviolis de ricotta y nuez",
+                "cantidad": 1,
+                "precio": 16200,
+                "subtotal": 16200
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Carpaccio de remolacha",
+                "cantidad": 1,
+                "precio": 9200,
+                "subtotal": 9200
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Solomillo de res",
+                "cantidad": 1,
+                "precio": 22000,
+                "subtotal": 22000
+            }
+        ]
+    },
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 15:54:34",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 83800,
+        "cliente": "Santiago 1",
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Chocolate caliente vegano",
+                "cantidad": 1,
+                "precio": 6000,
+                "subtotal": 6000
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Ensalada C\u00e9sar Vegana",
+                "cantidad": 1,
+                "precio": 8800,
+                "subtotal": 8800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Hummus con crudit\u00e9s",
+                "cantidad": 1,
+                "precio": 7900,
+                "subtotal": 7900
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Rollitos de primavera veganos",
+                "cantidad": 1,
+                "precio": 8900,
+                "subtotal": 8900
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Raviolis de ricotta y nuez",
+                "cantidad": 1,
+                "precio": 16200,
+                "subtotal": 16200
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Carpaccio de remolacha",
+                "cantidad": 1,
+                "precio": 9200,
+                "subtotal": 9200
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Solomillo de res",
+                "cantidad": 1,
+                "precio": 22000,
+                "subtotal": 22000
+            }
+        ]
+    },
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 16:18:54",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 8200,
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Croquetas de quinoa",
+                "cantidad": 1,
+                "precio": 8200,
+                "subtotal": 8200
+            },
+            {
+                "cliente": "Santiago 2",
+                "nombre": "Croquetas de quinoa",
+                "cantidad": 1,
+                "precio": 8200,
+                "subtotal": 8200
+            },
+            {
+                "cliente": "Santiago 2",
+                "nombre": "Mousse de aguacate",
+                "cantidad": 1,
+                "precio": 7800,
+                "subtotal": 7800
+            },
+            {
+                "cliente": "Santiago 2",
+                "nombre": "Mousse de aguacate",
+                "cantidad": 1,
+                "precio": 7800,
+                "subtotal": 7800
+            }
+        ]
+    },
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 16:20:26",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 8200,
+        "cliente": "Santiago 1",
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Croquetas de quinoa",
+                "cantidad": 1,
+                "precio": 8200,
+                "subtotal": 8200
+            }
+        ]
+    },
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 16:32:16",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 15600,
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Chocolate caliente vegano",
+                "cantidad": 1,
+                "precio": 6000,
+                "subtotal": 6000
+            }
+        ]
+    },
+    {
+        "mesa_id": "1",
+        "mesa_nombre": "Mesa 1",
+        "fecha": "2025-05-22 16:32:22",
+        "tipo_pago": "individual",
+        "metodo_pago": "efectivo",
+        "total": 15600,
+        "cliente": "Santiago 1",
+        "pedidos": [
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Caf\u00e9 con leche de avena",
+                "cantidad": 1,
+                "precio": 4800,
+                "subtotal": 4800
+            },
+            {
+                "cliente": "Santiago 1",
+                "nombre": "Chocolate caliente vegano",
+                "cantidad": 1,
+                "precio": 6000,
+                "subtotal": 6000
+            }
+        ]
+    }
+]

@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 # Configuración de rutas
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,43 +12,73 @@ MENU_JSON = os.path.join(DATA_DIR, 'menu.json')
 
 class SistemaMesas:
     def __init__(self):
-        os.makedirs(DATA_DIR, exist_ok=True)
-        os.makedirs(HISTORIAL_DIR, exist_ok=True)
-        self.cargar_datos()
-
-    def cargar_datos(self):
-        """Carga los datos iniciales de mesas y menú."""
+        self.mesas = {}
+        self.menu = {}
+        self.cargar_mesas()
+        self.cargar_menu()
+        
+    def cargar_mesas(self):
+        """Carga las mesas desde el archivo JSON"""
         try:
-            with open(MESAS_JSON, 'r', encoding='utf-8') as f:
-                self.mesas = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            print("Error cargando mesas.json")
-            self.mesas = {}
+            if os.path.exists(MESAS_JSON):
+                with open(MESAS_JSON, 'r', encoding='utf-8') as f:
+                    self.mesas = json.load(f)
+            else:
+                self.inicializar_mesas()
+        except Exception as e:
+            print(f"Error al cargar mesas: {str(e)}")
+            self.inicializar_mesas()
 
+    def cargar_menu(self):
+        """Carga el menú desde el archivo JSON"""
         try:
-            with open(MENU_JSON, 'r', encoding='utf-8') as f:
-                self.menu = json.load(f)
-                self._normalizar_menu()
-        except (FileNotFoundError, json.JSONDecodeError):
-            print("Error cargando menu.json")
-            self.menu = {'platos': {}}
+            if os.path.exists(MENU_JSON):
+                with open(MENU_JSON, 'r', encoding='utf-8') as f:
+                    self.menu = json.load(f)
+            else:
+                self.inicializar_menu()
+        except Exception as e:
+            print(f"Error al cargar menú: {str(e)}")
+            self.inicializar_menu()
 
-    def _normalizar_menu(self):
-        """Normaliza los nombres de las categorías del menú."""
-        if 'platos' in self.menu:
-            for etapa, categorias in self.menu['platos'].items():
-                nuevas_categorias = {}
-                for categoria, platos in categorias.items():
-                    nuevas_platos = []
-                    for plato in platos:
-                        if 'categoria' in plato:
-                            plato['categoría'] = plato.pop('categoria')
-                        nuevas_platos.append(plato)
-                    nuevas_categorias[categoria] = nuevas_platos
-                self.menu['platos'][etapa] = nuevas_categorias
-
+    def inicializar_mesas(self):
+        """Inicializa las mesas con valores predeterminados"""
+        self.mesas = {
+            'mesa_1': [{
+                'nombre': 'Mesa 1',
+                'capacidad': 4,
+                'estado': 'libre',
+                'url_qr': 'http://localhost:5000/mesa/1',
+                'cliente_1': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_2': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_3': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_4': {'nombre': '', 'pedidos': [], 'notas': []}
+            }],
+            'mesa_2': [{
+                'nombre': 'Mesa 2',
+                'capacidad': 2,
+                'estado': 'libre',
+                'url_qr': 'http://localhost:5000/mesa/2',
+                'cliente_1': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_2': {'nombre': '', 'pedidos': [], 'notas': []}
+            }],
+            'mesa_3': [{
+                'nombre': 'Mesa 3',
+                'capacidad': 6,
+                'estado': 'libre',
+                'url_qr': 'http://localhost:5000/mesa/3',
+                'cliente_1': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_2': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_3': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_4': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_5': {'nombre': '', 'pedidos': [], 'notas': []},
+                'cliente_6': {'nombre': '', 'pedidos': [], 'notas': []}
+            }]
+        }
+        self.guardar_mesas()
+        
     def guardar_mesas(self):
-        """Guarda el estado actual de las mesas de forma atómica."""
+        """Guarda las mesas en el archivo JSON"""
         try:
             with open(MESAS_TEMP_JSON, 'w', encoding='utf-8') as f_temp:
                 json.dump(self.mesas, f_temp, indent=2, ensure_ascii=False)
@@ -60,6 +91,107 @@ class SistemaMesas:
                 except OSError as e_remove:
                     print(f"⚠️ Error al eliminar archivo temporal fallido: {e_remove}")
             return False
+        return True
+
+    def inicializar_menu(self):
+        """Inicializa el menú con valores predeterminados"""
+        self.menu = {
+            'platos': {
+                'entrada': {
+                    'entradas': [
+                        {
+                            'id': 'entrada_1',
+                            'nombre': 'Ensalada César',
+                            'descripcion': 'Lechuga romana, pollo a la parrilla, crutones, queso parmesano y aderezo césar',
+                            'precio': 1200,
+                            'dietas': ['vegetariano', 'sin gluten']
+                        }
+                    ]
+                },
+                'principal': {
+                    'carnes': [
+                        {
+                            'id': 'carne_1',
+                            'nombre': 'Bife de Chorizo',
+                            'descripcion': '300g con papas fritas y ensalada',
+                            'precio': 2500,
+                            'dietas': []
+                        }
+                    ]
+                },
+                'postre': {
+                    'postres': [
+                        {
+                            'id': 'postre_1',
+                            'nombre': 'Tiramisú',
+                            'descripcion': 'Clásico postre italiano con café y mascarpone',
+                            'precio': 800,
+                            'dietas': ['vegetariano']
+                        }
+                    ]
+                }
+            }
+        }
+        self.guardar_menu()
+
+    def guardar_menu(self):
+        """Guarda el menú en el archivo JSON"""
+        try:
+            with open(MENU_JSON, 'w', encoding='utf-8') as f:
+                json.dump(self.menu, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"⚠️ Error al guardar menú: {e}")
+            return False
+        return True
+
+    def obtener_mesa_por_url(self, url):
+        """Obtiene una mesa por su URL QR"""
+        for mesa_id, mesa_data in self.mesas.items():
+            if mesa_data[0]['url_qr'] == url:
+                return mesa_id, mesa_data[0]
+        return None, None
+        
+    def registrar_cliente(self, mesa_id, nombre):
+        """Registra un cliente en una mesa"""
+        if mesa_id not in self.mesas:
+            return None
+            
+        mesa = self.mesas[mesa_id][0]
+        
+        # Verificar si el nombre ya está registrado
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f'cliente_{i}'
+            if mesa[cliente_key]['nombre'] == nombre:
+                return None
+                
+        # Buscar un espacio libre
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f'cliente_{i}'
+            if not mesa[cliente_key]['nombre']:
+                mesa[cliente_key]['nombre'] = nombre
+                mesa['estado'] = 'ocupada'
+                self.guardar_mesas()
+                return cliente_key
+                
+        return None
+        
+    def reiniciar_mesa(self, mesa_id):
+        """Reinicia una mesa a su estado inicial"""
+        if mesa_id not in self.mesas:
+            return False
+            
+        mesa = self.mesas[mesa_id][0]
+        mesa['estado'] = 'libre'
+        
+        for i in range(1, mesa['capacidad'] + 1):
+            cliente_key = f'cliente_{i}'
+            mesa[cliente_key] = {
+                'nombre': '',
+                'pedidos': [],
+                'notas': []
+            }
+            
+        self.guardar_mesas()
         return True
 
     def obtener_mesa(self, mesa_id):
@@ -75,39 +207,6 @@ class SistemaMesas:
         except Exception as e:
             print(f"⚠️ Error al obtener mesa {mesa_id}: {str(e)}")
             return None
-
-    def obtener_mesa_por_url(self, qr_url):
-        """Busca una mesa por su URL QR."""
-        for mesa_id, mesa_data in self.mesas.items():
-            if mesa_data[0]['qr_url'] == qr_url:
-                return mesa_id, mesa_data[0]
-        return None, None
-
-    def registrar_cliente(self, mesa_id, nombre_cliente):
-        """Registra un cliente en una mesa específica."""
-        if mesa_id not in self.mesas:
-            print(f"⚠️ Error: Mesa {mesa_id} no encontrada")
-            return None
-
-        mesa = self.mesas[mesa_id][0]
-        
-        # Primero buscar si el cliente ya existe en la mesa
-        for i in range(1, mesa['capacidad'] + 1):
-            cliente_key = f"cliente_{i}"
-            if mesa[cliente_key]['nombre'] == nombre_cliente:
-                mesa['estado'] = 'ocupada'
-                self.guardar_mesas()
-                return cliente_key
-
-        # Si no existe, buscar un espacio libre
-        for i in range(1, mesa['capacidad'] + 1):
-            cliente_key = f"cliente_{i}"
-            if not mesa[cliente_key]['nombre']:
-                mesa[cliente_key]['nombre'] = nombre_cliente
-                mesa['estado'] = 'ocupada'
-                self.guardar_mesas()
-                return cliente_key
-        return None
 
     def limpiar_mesa(self, mesa_id):
         """Reinicia el estado de una mesa después de pagar."""

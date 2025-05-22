@@ -4,7 +4,7 @@
       "nombre": "Mesa 1",
       "qr_url": "https://turestaurante.com/menu/mesa-1",
       "capacidad": 2,
-      "estado": "libre",
+      "estado": "ocupada",
       "comentarios_camarero": [],
       "notificaciones": [],
       "cliente_1": {
@@ -27,21 +27,26 @@
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_2": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_3": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_4": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
-      "comentarios_camarero": []
+      "comentarios_camarero": [],
+      "notificaciones": []
     }
   ],
   "3": [
@@ -69,27 +74,33 @@
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_2": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_3": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_4": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_5": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_6": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "comentarios_camarero": []
     }
@@ -102,19 +113,23 @@
       "estado": "libre",
       "cliente_1": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_2": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_3": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "cliente_4": {
         "nombre": "",
-        "pedidos": []
+        "pedidos": [],
+        "contador_pedidos": 0
       },
       "comentarios_camarero": []
     }
